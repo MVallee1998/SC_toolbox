@@ -4,6 +4,7 @@ import binary_search_tree as bst
 import json
 import datetime
 from itertools import combinations, permutations
+import timeit
 
 
 def read_file(filename):
@@ -135,6 +136,76 @@ def dicho_search(x, l, a, b):
             return True
 
 
+def face_to_binary(face, m):
+    binary_face = m * [0]
+    for k in face:
+        binary_face[m - k] = 1
+    return int(''.join(map(str, binary_face)), 2)
+
+
+def dichotomie(t, v):
+    a = 0
+    b = len(t) - 1
+    while a <= b:
+        m = (a + b) // 2
+        if t[m] == v:
+            # on a trouvé v
+            return m
+        elif t[m] < v:
+            a = m + 1
+        else:
+            b = m - 1
+    # on a a > b
+    return -1
+
+
+def Garrison_Scott(facets):
+    list_char_funct = []
+    n = len(facets[0])
+    m = max(face[-1] for face in facets)
+    '''we create all the non zero elements of Z_2^n'''
+    list_2_pow = [1]
+    for k in range(1, m + 1):
+        list_2_pow.append(list_2_pow[-1] * 2)
+    list_S = []
+    for k in range(n, m):
+        list_S.append(list(range(1, list_2_pow[n])))
+    faces_set = create_faces_set(facets)
+    FP = []
+    for faces_tree in faces_set:
+        faces = []
+        faces_tree.TreeToList(faces)
+        for face in faces:
+            FP.append(face_to_binary(face, m))
+    current_lambda = []
+    i = n
+    for k in range(n):
+        current_lambda.append(list_2_pow[k])
+    for k in range(n, m):
+        current_lambda.append(0)
+    while i >= n:
+        for face_bin in FP:
+            if (face_bin < list_2_pow[i + 1]) and ((face_bin | list_2_pow[i]) == face_bin):
+                linear_comb = 0
+                face_bin_transformed = face_bin ^ list_2_pow[i]
+                for k in range(m):
+                    if face_bin_transformed | list_2_pow[k] == face_bin_transformed:
+                        linear_comb = current_lambda[k] ^ linear_comb
+                index = dichotomie(list_S[n - i], linear_comb)
+                if index != -1:
+                    list_S[n - i].pop(index)
+        while len(list_S[n - i]) > 0:
+            current_lambda[i] = list_S[n - i].pop()
+            if i + 1 == m:
+                list_char_funct.append(current_lambda.copy())
+            else:
+                i += 1
+                break
+        if len(list_S[n - i]) == 0:
+            list_S[n - i] = list(range(1, list_2_pow[n]))
+            i -= 1
+    return list_char_funct
+
 
 def MNF_set_to_Maximal_faces_set(MNF_set, n, m):
     M = range(1, m + 1)
@@ -155,8 +226,6 @@ def MNF_set_to_Maximal_faces_set(MNF_set, n, m):
         if is_a_facet:
             facets.append(facet)
     return facets
-
-
 
 
 def find_minimal_facets_set(facets_set):
@@ -200,42 +269,53 @@ def find_minimal_facets_set(facets_set):
 
 
 
-# setting up the connection with database
-conn = sqlite3.connect("Real_Toric_Spaces.db")
-print("Successfully connected to the database")
 
-cursor = conn.cursor()
-
-query = "INSERT OR IGNORE INTO PLSpheres (n, m, Pic, max_faces, min_non_faces, f_vector, h_vector, g_vector, " \
-        "who_found_me, Date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?); "
-
-facets_list = read_file('./PLS_10_6')
+facets_list = read_file('./PLS_9_5')
 # storing values in a variable
 values = []
-
-for k in range(len(facets_list)):
-    print((k/len(facets_list)) * 100)
+start = timeit.default_timer()
+for k in range(300):
     facets = facets_list[k]
-    facets_converted = json.loads(facets)
-    n, m, pic = give_dim(facets_converted)
-    faces_set = create_faces_set(facets_converted)
-    f_vector = create_f_vector(faces_set)
-    h_vector = create_h_vector(f_vector)
-    g_vector = create_g_vector(h_vector)
-    MNF_set = faces_set_to_MNF_set(faces_set)
-    min_non_faces = []
-    MNF_set.TreeToList(min_non_faces)
-    author = 'Hyuntae Jang'
-    date = datetime.datetime.now()
-    values.append((n, m, pic, facets, str(min_non_faces), str(f_vector), str(h_vector), str(g_vector), author,
-                   date.strftime("%x,%X")))
-# executing the query with values
+    list_lambdas = Garrison_Scott(json.loads(facets))
+stop = timeit.default_timer()
+print(stop - start)
 
-cursor.executemany(query, values)
-# to make final output we have to run the 'commit()' method of the database object
-
-conn.commit()
-print(cursor.rowcount, "records inserted")
-# closing the connection
-cursor.close()
-conn.close()
+# # setting up the connection with database
+# conn = sqlite3.connect("Real_Toric_Spaces.db")
+# print("Successfully connected to the database")
+#
+# cursor = conn.cursor()
+#
+# query = "INSERT OR IGNORE INTO PLSpheres (n, m, Pic, max_faces, min_non_faces, f_vector, h_vector, g_vector, " \
+#         "who_found_me, Date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?); "
+#
+# facets_list = read_file('./PLS_10_6')
+# # storing values in a variable
+# values = []
+#
+# for k in range(len(facets_list)):
+#     print((k / len(facets_list)) * 100)
+#     facets = facets_list[k]
+#     facets_converted = json.loads(facets)
+#     n, m, pic = give_dim(facets_converted)
+#     faces_set = create_faces_set(facets_converted)
+#     f_vector = create_f_vector(faces_set)
+#     h_vector = create_h_vector(f_vector)
+#     g_vector = create_g_vector(h_vector)
+#     MNF_set = faces_set_to_MNF_set(faces_set)
+#     min_non_faces = []
+#     MNF_set.TreeToList(min_non_faces)
+#     author = 'Hyuntae Jang'
+#     date = datetime.datetime.now()
+#     values.append((n, m, pic, facets, str(min_non_faces), str(f_vector), str(h_vector), str(g_vector), author,
+#                    date.strftime("%x,%X")))
+# # executing the query with values
+#
+# cursor.executemany(query, values)
+# # to make final output we have to run the 'commit()' method of the database object
+#
+# conn.commit()
+# print(cursor.rowcount, "records inserted")
+# # closing the connection
+# cursor.close()
+# conn.close()
