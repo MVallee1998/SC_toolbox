@@ -184,6 +184,8 @@ def Garrison_Scott(facets):
     for k in range(n, m):
         current_lambda.append(0)
     while i >= n:
+        if len(list_char_funct) % 1000 == 0:
+            print(len(list_char_funct))
         for face_bin in FP:
             if (face_bin < list_2_pow[i + 1]) and ((face_bin | list_2_pow[i]) == face_bin):
                 linear_comb = 0
@@ -214,7 +216,7 @@ def MNF_set_to_Maximal_faces_set(MNF_set, n, m):
     for facet_iter in candidate_facets_iter:
         facet = list(facet_iter)
         is_a_facet = True
-        for MNF in MNF_set:  # We chack if it the facet does not contain some minimal non-face
+        for MNF in MNF_set:  # We check if it the facet does not contain some minimal non-face
             if not len(MNF) > len(facet):
                 is_contained = True
                 for i in MNF:
@@ -250,6 +252,7 @@ def find_minimal_facets_set(facets_set):
                     facets_set[i][j] = permutation[a]
             facets_set[i].sort()
         facets_set.sort()
+    return (facets_set)
     # At this point, only the labels (n+1, ..., m) should be modified to obtain the minimal pure simplicial complex
     # for the lexicographic order
     minimal_facets_set = [facet.copy() for facet in facets_set]
@@ -268,24 +271,14 @@ def find_minimal_facets_set(facets_set):
     return minimal_facets_set
 
 
-K = MNF_set_to_Maximal_faces_set([
-    [4,5,6,8,9,10,11,12],
-    [2,3,6,7,9,10,11,13],
-    [1,3,5,7,8,10,11,14],
-    [1,2,4,7,8,9,11,15],
-    [2,3,4,5,7,8,12,13],
-    [1,3,4,6,7,9,12,14],
-    [1,2,5,6,7,10,12,15],
-    [1,2,5,6,8,9,13,14],
-    [1,3,4,6,8,10,13,15],
-    [2,3,4,5,9,10,14,15],
-    [1,2,4,10,11,12,13,14],
-    [1,3,5,9,11,12,13,15],
-    [2,3,6,8,11,12,14,15],
-    [4,5,6,7,11,13,14,15],
-    [7,8,9,10,12,13,14,15]],11,15)
-print(K)
-
+print(Garrison_Scott([[1, 2], [1, 5], [2, 3], [3, 4], [4, 5]]))
+for n in range(1, 10):
+    L = []
+    for i in range(1, n + 1):
+        L.append([i, i + n])
+    print(L)
+    K = MNF_set_to_Maximal_faces_set(L, n, 2 * n)
+    print(len(Garrison_Scott(K)))
 
 # facets_list = read_file('./PLS_6_3')
 #
