@@ -143,6 +143,59 @@ class PureSimplicialComplex:
             if is_a_facet:
                 self.facets.append(facet)
 
+    def is_closed(self):
+        if self.n<2:return True
+        is_closed = True
+        for ridge_data in self.FP_bin[self.n-2]:
+            if len(ridge_data[1]) != 2:
+                is_closed = False
+                break
+        return is_closed
+
+
+
+    def is_minimal_lexico_order(self):
+
+
+def Link_of(K, F):
+    facets_of_K = [facet_data[0] for facet_data in K.FP_bin[K.n-1]]
+    k = len(F) -1
+    is_a_face = False
+    for facet in facets_of_K:
+        if F | facet == facet:
+            is_a_face = True
+            break
+    if not is_a_face:
+        raise Exception
+    facets_of_Link = []
+    complementary_faces = [facet_data[0] for facet_data in K.FP_bin[K.n-k-1]]
+    for complementary_face in complementary_faces:
+        if dichotomie(complementary_face ^ F, facets_of_K):
+            facets_of_Link.append(complementary_face)
+    unused_labels = []
+    for i in range(K.m):
+        unused = True
+        for facet in facets_of_Link:
+            if K.list_2_pow[i] | facet == facet:
+                unused = False
+                break
+        if unused:
+            unused_labels.append(i)
+    for i in range(len(unused_labels)-1, -1,-1):
+        for j in range(len(facets_of_Link)):
+            unshifted_bits = facets_of_Link[j] % K.list_2_pow[unused_labels[i]]
+            facets_of_Link[j] = ((facets_of_Link[j] ^ unshifted_bits) >> 1) ^ unshifted_bits
+    if len(unused_labels) == 0:
+        return PureSimplicialComplex(K.n-k-1, K.m, facets_of_Link)
+    m_of_link = K.m
+    label_unused = True
+    while m_of_link>0 & label_unused:
+        for facet in facets_of_Link:
+            if facet ^ K.list_2_pow[m_of_link-1] == facet:
+                label_unused = False
+                break
+    return PureSimplicialComplex(K.n-k-1, m_of_link, facets_of_Link)
+
 
 def read_file(filename):
     with open(filename, 'rb') as f:
@@ -232,6 +285,8 @@ def Garrison_Scott(K=PureSimplicialComplex()):
             list_S[K.n - i] = list(range(1, list_2_pow[K.n]))
             i -= 1
     return list_char_funct
+
+
 
 
 # def find_minimal_facets_set(facets_set):
