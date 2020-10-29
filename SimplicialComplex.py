@@ -133,7 +133,7 @@ class PureSimplicialComplex:
         candidate_facets = []
         for facet_iter in candidate_facets_iter:
             candidate_facets.append(sum([self.list_2_pow[k] for k in facet_iter]))
-        self.facets = []
+        self.facets_bin = []
         for facet in candidate_facets:
             is_a_facet = True
             for MNF in self.MNF_set:  # We check if it the facet does not contain some minimal non-face
@@ -141,25 +141,73 @@ class PureSimplicialComplex:
                     is__a_facet = False
                     break
             if is_a_facet:
-                self.facets.append(facet)
+                self.facets_bin.append(facet)
+
+    def binary_to_face(self, face_bin):
+        face = []
+        for k in range(self.m):
+            if face_bin | self.list_2_pow[k] == face_bin:
+                face.append(k)
+        return face
 
     def is_closed(self):
-        if self.n<2:return True
+        if not self.FP_bin:
+            self.create_FP()
+        if self.n < 2: return True
         is_closed = True
-        for ridge_data in self.FP_bin[self.n-2]:
+        for ridge_data in self.FP_bin[self.n - 2]:
             if len(ridge_data[1]) != 2:
                 is_closed = False
                 break
         return is_closed
 
-
-
     def is_minimal_lexico_order(self):
+        closed_vertices = []
+        for v in range(self.m):
+            link_of_v = Link_of(self, self.list_2_pow[v])
+            if link_of_v.is_closed():
+                closed_vertices.append(v)
+
+        ridges = []
+        minimal_facets_bin = self.facets_bin.copy()
+        for v in closed_vertices:
+            ridges_containing_v = [ridge_data[0] for ridge_data in self.FP_bin[self.n - 2] if
+                                   ridge_data[0] | self.list_2_pow[v] == ridge_data]
+            for ridge in ridges_containing_v:
+                ridge_labels_to_modify = self.binary_to_face(ridge ^ self.list_2_pow[v])
+                for ridge_labels_permu_iter in permutations(ridge_labels_to_modify):
+                    F = []
+                    for facet in self.facets_bin:
+                        if facet | ridge == facet:
+                            F += (self.binary_to_face(facet ^ ridge))
+                    remaining_labels = self.binary_to_face((self.list_2_pow[self.m] - 1) ^ ridge ^ F[0] ^ F[1])
+                    for F_perm_iter in permutations(F):
+                        for remaining_labels_perm_iter in permutations(remaining_labels):
+                            old_labels = [v]
+                            old_labels += list(ridge_labels_permu_iter)
+                            old_labels += list(F_perm_iter)
+                            old_labels += list(remaining_labels_perm_iter)
+                            relabeled_facets = relabel_facets(self, old_labels)
+                            if relabeled_facets < minimal_facets_bin:
+                                return False
+        return True
+
+def relabel_facets(K, old_labels):
+    if len(old_labels) != K.m:
+        raise Exception
+    new_facets = [0] * len(K.facets_bin)
+    for k in range(len(new_facets)):
+        for l in range(K.m):
+            if K.facets_bin[k] ^ K.list_2_pow[old_labels[l]] == K.facets_bin[k]:
+                # the case when 01 or 10
+                new_facets[k] += K.list_2_pow[l]
+    new_facets.sort()
+    return new_facets
 
 
 def Link_of(K, F):
-    facets_of_K = [facet_data[0] for facet_data in K.FP_bin[K.n-1]]
-    k = len(F) -1
+    facets_of_K = [facet_data[0] for facet_data in K.FP_bin[K.n - 1]]
+    k = len(F) - 1
     is_a_face = False
     for facet in facets_of_K:
         if F | facet == facet:
@@ -168,7 +216,7 @@ def Link_of(K, F):
     if not is_a_face:
         raise Exception
     facets_of_Link = []
-    complementary_faces = [facet_data[0] for facet_data in K.FP_bin[K.n-k-1]]
+    complementary_faces = [facet_data[0] for facet_data in K.FP_bin[K.n - k - 1]]
     for complementary_face in complementary_faces:
         if dichotomie(complementary_face ^ F, facets_of_K):
             facets_of_Link.append(complementary_face)
@@ -181,20 +229,20 @@ def Link_of(K, F):
                 break
         if unused:
             unused_labels.append(i)
-    for i in range(len(unused_labels)-1, -1,-1):
+    for i in range(len(unused_labels) - 1, -1, -1):
         for j in range(len(facets_of_Link)):
             unshifted_bits = facets_of_Link[j] % K.list_2_pow[unused_labels[i]]
             facets_of_Link[j] = ((facets_of_Link[j] ^ unshifted_bits) >> 1) ^ unshifted_bits
     if len(unused_labels) == 0:
-        return PureSimplicialComplex(K.n-k-1, K.m, facets_of_Link)
+        return PureSimplicialComplex(K.n - k - 1, K.m, facets_of_Link)
     m_of_link = K.m
     label_unused = True
-    while m_of_link>0 & label_unused:
+    while m_of_link > 0 & label_unused:
         for facet in facets_of_Link:
-            if facet ^ K.list_2_pow[m_of_link-1] == facet:
+            if facet ^ K.list_2_pow[m_of_link - 1] == facet:
                 label_unused = False
                 break
-    return PureSimplicialComplex(K.n-k-1, m_of_link, facets_of_Link)
+    return PureSimplicialComplex(K.n - k - 1, m_of_link, facets_of_Link)
 
 
 def read_file(filename):
@@ -286,9 +334,6 @@ def Garrison_Scott(K=PureSimplicialComplex()):
             i -= 1
     return list_char_funct
 
-
-
-
 # def find_minimal_facets_set(facets_set):
 #     facets_set.sort()
 #     n = len(facets_set[0])
@@ -328,8 +373,6 @@ def Garrison_Scott(K=PureSimplicialComplex()):
 #         if temp_facets_set < minimal_facets_set:
 #             minimal_facets_set = [facet.copy() for facet in temp_facets_set]
 #     return minimal_facets_set
-
-
 
 
 # facets_list = read_file('./PLS_6_3')
