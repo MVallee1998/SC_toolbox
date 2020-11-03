@@ -19,39 +19,53 @@ class PureSimplicialComplex:
     def __init__(self, facets=None, MNF_set=None, n=None):
         if facets:
             self.facets = facets
-            self.n = len(facets[0])
-            labels = []
-            for facet in facets:
-                for i in facet:
-                    if i not in labels:
-                        labels.append(i)
-            self.m = len(labels)
-            self.facets_bin = [face_to_binary(facet, self.m) for facet in self.facets]
-            self.faces_set_to_MNF_set()
+            if type(facets[0]) == list:
+                self.n = len(facets[0])
+                labels = []
+                for facet in facets:
+                    for i in facet:
+                        if i not in labels:
+                            labels.append(i)
+                self.m = len(labels)
+                self.list_2_pow = [1]
+                for k in range(self.m + 1):
+                    self.list_2_pow.append(self.list_2_pow[-1] * 2)
+                self.facets_bin = [face_to_binary(facet, self.m) for facet in self.facets]
+            else:
+                self.n = 0
+                self.m = 0
+                self.facets_bin = facets
+                self.facets_bin.sort()
+                last_facet = self.facets_bin[-1]
+                two_pow = 1
+                while last_facet % two_pow != last_facet:
+                    if two_pow | last_facet == last_facet:
+                        self.n += 1
+                    self.m += 1
+                    two_pow *= 2
+                self.list_2_pow = [1]
+                for k in range(self.m + 1):
+                    self.list_2_pow.append(self.list_2_pow[-1] * 2)
         elif MNF_set:
             if not n:
                 raise Exception
             else:
                 self.MNF_set = MNF_set
                 self.n = n
-                self.m = m
-                if not self.m:
-                    labels = []
-                    for MNF in MNF_set:
-                        for i in MNF:
-                            if i not in labels:
-                                labels.append(i)
-                    self.m = len(labels)
+                labels = []
+                for MNF in MNF_set:
+                    for i in MNF:
+                        if i not in labels:
+                            labels.append(i)
+                self.m = len(labels)
                 self.MNF_set_bin = [face_to_binary(MNF, self.m) for MNF in self.MNF_set]
                 self.compute_facets_from_MNF_set()
         self.FP_bin = None
-        self.Pic = self.m - n
+        self.Pic = self.m - self.n
         self.f_vector = None
         self.h_vector = None
         self.g_vector = None
-        self.list_2_pow = [1]
-        for k in range(self.m + 1):
-            self.list_2_pow.append(self.list_2_pow[-1] * 2)
+
         self.H = None
 
     def create_FP(self):
@@ -68,7 +82,7 @@ class PureSimplicialComplex:
                 for element in self.list_2_pow[:self.m]:  # construct the (k-1)-subfaces
                     if element | face == face:
                         subface = element ^ face
-                        if not faces_set[k].findval((subface, [l])):
+                        if not faces_set[k].findval(subface):
                             faces_set[k].insert((subface, [l]))
         vertices = []
         faces_set[0].TreeToList(vertices)
@@ -103,6 +117,7 @@ class PureSimplicialComplex:
         temp_faces_list = [self.list_2_pow[self.m] - 1]
         k = self.m
         subface_set = bst.Node()
+        subface_set.insertList(temp_faces_list)
         # we enumerate all the faces until the time we will have the right dimension faces
         while k > self.n:
             subface_set = bst.Node()
@@ -112,7 +127,7 @@ class PureSimplicialComplex:
                         subface = element ^ face
                         if not subface_set.findval(subface):
                             if k > self.n or (k == self.n and (not dichotomie(subface, self.FP_bin[k - 1]))):
-                                subface_set.insert(subface)
+                                subface_set.insert((subface,[]))
             temp_faces_list = []
             subface_set.TreeToList(temp_faces_list)
             k = k - 1
@@ -122,12 +137,13 @@ class PureSimplicialComplex:
         for k in range(self.n - 1, -1, -1):  # dimension
             faces = []
             all_non_faces[k + 1].TreeToList(faces)
-            for face in faces:  # treat every face of dimension k
+            for l in range(len(faces)):  # treat every face of dimension k
+                face = faces[l]
                 for element in self.list_2_pow[:self.m]:  # construct the (k-1)-subfaces
                     if element | face == face:
                         subface = element ^ face
                         if (not (all_non_faces[k].findval(subface))) and (not dichotomie(subface, self.FP_bin[k])):
-                            all_non_faces[k].insert(subface)
+                            all_non_faces[k].insert((subface,[l]))
         MNF_set = bst.Node()
         # Here we will try every face of dimension k
         for k in range(1, self.n + 1):
@@ -142,9 +158,10 @@ class PureSimplicialComplex:
                             is_MNF = False
                             break
                 if is_MNF:
-                    MNF_set.insert(face_to_test)
+                    MNF_set.insert((face_to_test,[0]))
         self.MNF_set_bin = []
         MNF_set.TreeToList(self.MNF_set_bin)
+        self.MNF_set_bin = self.MNF_set_bin[:][0]
 
     def compute_facets_from_MNF_set(self):  # TO CHANGE
         M = range(1, self.m + 1)
@@ -173,12 +190,12 @@ class PureSimplicialComplex:
         if not self.FP_bin:
             self.create_FP()
         if self.n < 2: return True
-        is_closed = True
+        closed = True
         for ridge_data in self.FP_bin[self.n - 2]:
             if len(ridge_data[1]) != 2:
-                is_closed = False
+                closed = False
                 break
-        return is_closed
+        return closed
 
     def list_unclosed_ridges(self):
         if not self.FP_bin:
@@ -200,6 +217,25 @@ class PureSimplicialComplex:
                     if not Link_K_of_F.is_Z2_homology_sphere():
                         return False
         return True
+
+    def is_candidate(self, S):
+        if S <= self.facets_bin[-1]:
+            return False
+        boundary_of_S = []
+        for element in self.list_2_pow:
+            if element | S == S:
+                boundary_of_S.append(element ^ S)
+        boundary_of_S.sort()
+        unclosed_ridges = self.list_unclosed_ridges()
+
+        if boundary_of_S[0] <= unclosed_ridges[0]:
+            for k in range(self.n):
+                for face_data in self.FP_bin[k]:
+                    if Link_of(self, face_data[0]).is_closed():
+                        if S | face_data[0] == S:
+                            return False
+            return True
+        return False
 
     def Z2_Betti_numbers(self):
         if not self.H:
@@ -276,7 +312,12 @@ def relabel_facets(K, old_labels):
 
 def Link_of(K, F):
     facets_of_K = [facet_data[0] for facet_data in K.FP_bin[K.n - 1]]
-    k = len(F) - 1
+    k = 0
+    l = 0
+    while F % K.list_2_pow[l] != F:
+        if K.list_2_pow[l] | F == F:
+            k += 1
+        l+=1
     is_a_face = False
     for facet in facets_of_K:
         if F | facet == facet:
@@ -287,9 +328,10 @@ def Link_of(K, F):
     facets_of_Link = []
     complementary_faces = [facet_data[0] for facet_data in K.FP_bin[K.n - k - 1]]
     for complementary_face in complementary_faces:
-        if dichotomie(complementary_face ^ F, facets_of_K):
+        if dichotomie(facets_of_K,complementary_face ^ F):
             facets_of_Link.append(complementary_face)
     unused_labels = []
+    print("coucou")
     for i in range(K.m):
         unused = True
         for facet in facets_of_Link:
@@ -407,10 +449,10 @@ def Garrison_Scott(K):
 def find_good_seeds(char_function, n, m):
     Pic = m - n
     cofacets = []
-    for cofacet_iter in combinations(range(1,m+1), Pic):
+    for cofacet_iter in combinations(range(1, m + 1), Pic):
         sub_array = []
         for index in cofacet_iter:
-            sub_array.append(char_function[index-1])
+            sub_array.append(char_function[index - 1])
         if Z2_linear_algebra.Z2Array(Pic, sub_array.copy()).is_invertible():
             cofacets.append(list(cofacet_iter))
 
@@ -422,28 +464,34 @@ def find_good_seeds(char_function, n, m):
         candidate_facets.append((list_2_pow[m] - 1) ^ face_to_binary(cofacet, m))
     initial_facet = candidate_facets.pop()
     K = PureSimplicialComplex([initial_facet])
+    return Hyuntae_algo(K, candidate_facets, [])
+
 
 #
-# def Hyuntae_algo(K, candidate_facets, results):
-#     new_candidate_facets = []
-#     # enumerate the new facets candidate for K
-#     for facet in candidate_facets:
-#         if K.is_candidate(facet):
-#             new_candidate_facets.append(facet)
-#     if new_candidate_facets == []:
-#         new_K = PureSimplicialComplex(K.facets[:len(K.facets) - 1])
-#         Hyuntae_algo(new_K, candidate_facets, results)
-#     new_facet = candidate_facets.pop()
-#     new_K = PureSimplicialComplex(K.facets + new_facet)
-#     if not new_K.is_promising():
-#         Hyuntae_algo(K, candidate_facets, results)
-#     elif not new_K.is_closed():
-#         Hyuntae_algo(new_K, candidate_facets, results)
-#     elif new_K.is_Z2_homology_sphere():
-#         results.append(new_K)
-#         Hyuntae_algo(K, candidate_facets, results)
-#     else:
-#         Hyuntae_algo(K, candidate_facets, results)
+def Hyuntae_algo(K, candidate_facets, results):
+    if K == []:
+        return results
+    print(K.facets,len(candidate_facets))
+    new_candidate_facets = []
+    # enumerate the new facets candidate for K
+    for facet in candidate_facets:
+        if K.is_candidate(facet):
+            new_candidate_facets.append(facet)
+
+    if new_candidate_facets == []:
+        new_K = PureSimplicialComplex(K.facets[:len(K.facets) - 1])
+        Hyuntae_algo(new_K, candidate_facets, results)
+    new_facet = new_candidate_facets.pop()
+    new_K = PureSimplicialComplex(K.facets + new_facet)
+    if not new_K.is_promising():
+        Hyuntae_algo(K, candidate_facets, results)
+    elif not new_K.is_closed():
+        Hyuntae_algo(new_K, candidate_facets, results)
+    elif new_K.is_Z2_homology_sphere():
+        results.append(new_K)
+        Hyuntae_algo(K, candidate_facets, results)
+    else:
+        Hyuntae_algo(K, candidate_facets, results)
 
 
 find_good_seeds([3, 5, 6, 9, 10, 12, 7, 11, 13, 14, 15, 8, 4, 2, 1], 11, 15)

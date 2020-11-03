@@ -23,17 +23,17 @@ class Node:
     def insert(self, data):
         # Compare the new value with the parent node
         if self.data:
-            if data < self.data[0]:
+            if data[0] < self.data[0]:
                 if self.left is None:
                     self.left = Node(data)
                 else:
                     self.left.insert(data)
-            elif data > self.data[0]:
+            elif data[0] > self.data[0]:
                 if self.right is None:
                     self.right = Node(data)
                 else:
                     self.right.insert(data)
-            elif data == self.data[0]:
+            elif data[0] == self.data[0]:
                 self.data[1] += data[1]
         else:
             self.data = data
