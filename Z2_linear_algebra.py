@@ -47,6 +47,9 @@ class Z2Array:
                 continue
             else:
                 (self.values[i], self.values[j_0]) = (self.values[j_0], self.values[i])
-            for j in range(i + 1, self.n):
-                if (self.values[j] | list_2_pow[i]) == self.values[j]:
-                    self.values[j] = self.values[j] ^ self.values[i]
+                for j in range(i + 1, self.n):
+                    if (self.values[j] | list_2_pow[i]) == self.values[j]:
+                        self.values[j] = self.values[j] ^ self.values[i]
+                i += 1
+                j += 1
+        return j

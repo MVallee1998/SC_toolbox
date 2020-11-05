@@ -34,7 +34,7 @@ class Node:
                 else:
                     self.right.insert(data)
             elif data[0] == self.data[0]:
-                self.data[1] += data[1]
+                self.data[1].append(data[1][0])
         else:
             self.data = data
 
