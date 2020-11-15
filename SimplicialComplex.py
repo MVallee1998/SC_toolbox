@@ -8,6 +8,9 @@ import timeit
 import Z2_linear_algebra
 import Betti_numbers as bnbr
 
+list_2_pow = [1]
+for k in range(16):
+    list_2_pow.append(list_2_pow[-1] * 2)
 
 
 def face_to_binary(face, m):
@@ -77,23 +80,24 @@ class PureSimplicialComplex:
         self.closed_faces = None
 
     def create_FP(self):
-        self.FP_bin = [[] for i in range(self.n)]
-        faces_set = [bst.Node() for k in range(self.n)]
-        facet_data = [(facet, []) for facet in self.facets_bin]
-        faces_set[-1].insertList(facet_data)
-        for k in range(self.n - 2, -1, -1):  # dimension
-            faces = []
-            faces_set[k + 1].TreeToList(faces)
-            self.FP_bin[k + 1] = faces.copy()
-            for l in range(len(faces)):  # treat every face of dimension k
-                face = faces[l][0]
-                for element in self.list_2_pow[:self.m]:  # construct the (k-1)-subfaces
-                    if element | face == face:
-                        subface = element ^ face
-                        faces_set[k].insert((subface, [l]))
-        vertices = []
-        faces_set[0].TreeToList(vertices)
-        self.FP_bin[0] = vertices.copy()
+        if not self.FP_bin:
+            self.FP_bin = [[] for i in range(self.n)]
+            faces_set = [bst.Node() for k in range(self.n)]
+            facet_data = [(facet, []) for facet in self.facets_bin]
+            faces_set[-1].insertList(facet_data)
+            for k in range(self.n - 2, -1, -1):  # dimension
+                faces = []
+                faces_set[k + 1].TreeToList(faces)
+                self.FP_bin[k + 1] = faces.copy()
+                for l in range(len(faces)):  # treat every face of dimension k
+                    face = faces[l][0]
+                    for element in self.list_2_pow[:self.m]:  # construct the (k-1)-subfaces
+                        if element | face == face:
+                            subface = element ^ face
+                            faces_set[k].insert((subface, [l]))
+            vertices = []
+            faces_set[0].TreeToList(vertices)
+            self.FP_bin[0] = vertices.copy()
 
     def create_f_vector(self):
         if not self.FP_bin:
@@ -241,7 +245,6 @@ class PureSimplicialComplex:
                     if self.is_closed(face_data[0]):
                         self.closed_faces.append(face_data[0])
 
-
     def list_unclosed_ridges(self):
         if not self.unclosed_ridges:
             ridges_set = bst.Node()
@@ -271,15 +274,11 @@ class PureSimplicialComplex:
                 return False
         return True
 
-
     def is_candidate(self, S, aimed_m):
         if S <= self.facets_bin[-1]:
             return False
         boundary_of_S = []
         self.list_closed_faces()
-        # list_2_pow = [1]
-        # for k in range(aimed_m):
-        #     list_2_pow.append(list_2_pow[-1]*2)
         for element in self.list_2_pow:
             if element | S == S:
                 boundary_of_S.append(element ^ S)
@@ -287,7 +286,7 @@ class PureSimplicialComplex:
         self.list_unclosed_ridges()
         unclosed_ridges = self.unclosed_ridges
         for ridge in boundary_of_S:
-            if dichotomie(unclosed_ridges,ridge) >= 0:
+            if dichotomie(unclosed_ridges, ridge) >= 0:
                 for closed_face in self.closed_faces:
                     if S | closed_face == S:
                         return False
@@ -511,7 +510,7 @@ def Garrison_Scott(K):
     return list_char_funct
 
 
-def find_good_seeds(char_function, n, m):
+def enumerate_facets_and_ridges(char_function, n, m):
     Pic = m - n
     cofacets = []
     for cofacet_iter in combinations(range(1, m + 1), Pic):
@@ -520,41 +519,162 @@ def find_good_seeds(char_function, n, m):
             sub_array.append(char_function[index - 1])
         if Z2_linear_algebra.Z2Array(Pic, sub_array.copy()).is_invertible():
             cofacets.append(list(cofacet_iter))
-
     candidate_facets = []
     list_2_pow = [1]
     for k in range(1, m + 1):
         list_2_pow.append(list_2_pow[-1] * 2)
     for cofacet in cofacets:
         candidate_facets.append((list_2_pow[m] - 1) ^ face_to_binary(cofacet, m))
-    candidate_facets.sort(reverse=True)
-    print(candidate_facets,len(candidate_facets))
-    initial_facet = candidate_facets.pop()
-    K = PureSimplicialComplex([initial_facet])
-    return Hyuntae_algo([K], candidate_facets, [], 15)
+    candidate_facets.sort()
+    ridges = []
+    for facet in candidate_facets:
+        for element in list_2_pow:
+            if element | facet == facet:
+                ridge = element ^ facet
+                if not ridge in ridges:
+                    ridges.append(ridge)
+    ridges.sort()
+    return candidate_facets, ridges
+
+
+def construct_graph(char_funct, n, m):
+    full_simplex = list_2_pow[m] - 1
+    facets, ridges = enumerate_facets_and_ridges(char_funct, n, m)
+    G = [(k, []) for k in range(len(facets))]
+    for i in range(len(G)):
+        for element1 in list_2_pow:
+            if element1 | facets[i] == facets[i]:
+                ridge = element1 ^ facets[i]
+                position_ridge = dichotomie(ridges, ridge)
+                G[i][1].append((position_ridge, []))
+                other_vertices = full_simplex ^ facets[i]
+                for element2 in list_2_pow:
+                    if element2 | other_vertices == other_vertices:
+                        position_of_connected_facet = dichotomie(facets, element2 ^ ridge)
+                        if position_of_connected_facet >= 0:
+                            G[i][1][-1][1].append(position_of_connected_facet)
+
+        # for j in range(len(facets)):
+        #     ridge_index = dichotomie(ridges, facets[i] & facets[j])
+        #     if ridge_index >= 0:
+        #         G[i][2].append((j,ridge_index))
+        #         if ridge_index not in G[i][1]:
+        #             G[i][1].append(ridge_index)
+    return facets, ridges, G
+
+
+def enumerate_cases(list_of_max, k, current_list, results):
+    if k == len(list_of_max):
+        results.append(current_list[:len(list_of_max)])
+    else:
+        if list_of_max[k] == -1:
+            enumerate_cases(list_of_max, k + 1, current_list + [-1], results)
+        else:
+            enumerate_cases(list_of_max, k + 1, current_list + [0], results)
+            if current_list[k] < list_of_max[k] - 1:
+                new_list = current_list.copy()
+                new_list[k] += 1
+                enumerate_cases(list_of_max, k, new_list, results)
+
+
+def graph_method(facets, ridges, G):
+    def graph_method_rec(info_ridges_arg, info_facets_arg, queued_facets, counter):
+        info_ridges = info_ridges_arg.copy()
+        info_facets = info_facets_arg.copy()
+        if counter >= 2:
+            K = []
+            for i in range(len(info_facets)):
+                if info_facets == 1:
+                    K.append(facets[i])
+        if not queued_facets:
+            if 1 not in info_ridges:
+                K = []
+                for i in range(len(info_facets)):
+                    if info_facets == 1:
+                        K.append(facets[i])
+                print("coucou",K)
+        else:
+            list_cases = []
+            for facet_index in queued_facets:
+                list_of_max = []
+                for list_neighbours in G[facet_index][1]:
+                    position_ridge = list_neighbours[0]
+                    if info_ridges[position_ridge] == 2:
+                        list_of_max.append(-1)
+                    else:
+                        list_of_max.append(len(list_neighbours[1]))
+                list_cases_current = []
+                enumerate_cases(list_of_max, 0, [0], list_cases_current)
+                list_cases.append(list_cases_current.copy())
+            list_cases_ref = list_cases.copy()
+            info_ridges_ref = info_ridges.copy()
+            info_facets_ref = info_facets.copy()
+            # print(sum([len(list_cases[i])for i in range(len(list_cases))]))
+            k = 0
+            list_facets_to_add = []
+            while k>-1:
+                problem_ridges = False
+                if list_cases[k] == []:
+                    list_cases[k] = list_cases_ref[k].copy()
+                    k -= 1
+                    continue
+                if k == 0:
+                    list_facets_to_add = []
+                    info_ridges = info_ridges_ref.copy()
+                    info_facets = info_facets_ref.copy()
+                index_facets_to_add = list_cases[k].pop()
+                for l in range(len(index_facets_to_add)):
+                    index_facet = index_facets_to_add[l]
+                    if info_facets[G[queued_facets[k]][1][l][1][index_facet]] != 1:
+                        list_facets_to_add.append(G[queued_facets[k]][1][l][1][index_facet])
+                        info_facets[G[queued_facets[k]][1][l][1][index_facet]] = 1
+                        for ridge_data in G[G[queued_facets[k]][1][l][1][index_facet]][1]:
+                            info_ridges[ridge_data[0]] += 1
+                            if info_ridges[ridge_data[0]] > 2: # maybe this problem
+                                problem_ridges = True
+                                break
+                        if problem_ridges:
+                            break
+                if problem_ridges:
+                    break
+                if (k + 1 == len(list_cases)):
+                    graph_method_rec(info_ridges, info_facets, list_facets_to_add,counter+1)
+                else:
+                    k+=1
+    info_ridges = [0 for ridge in ridges]
+    info_facets = [0 for facet in facets]
+    queued_facets = [0]
+    info_facets[0] = 1
+    for data_ridges in G[0][1]:
+        info_ridges[data_ridges[0]] = 1
+
+    graph_method_rec(info_ridges, info_facets, queued_facets, 0)
 
 
 #
-def Hyuntae_algo(pile, candidate_facets_ref, results,aimed_m):
+def Hyuntae_algo(pile, candidate_facets_ref, results, aimed_m):
     if pile == []:
         return results
     K = pile.pop()
     print(K.facets_bin, results)
     if not K.is_closed():
+        print("coucou")
         for face in candidate_facets_ref:
             if K.is_candidate(face, aimed_m):
-                print(K.facets_bin, face)
                 new_K = PureSimplicialComplex(K.facets_bin + [face])
                 pile.append(new_K)
-        return Hyuntae_algo(pile, candidate_facets_ref, results,aimed_m)
-    elif K.is_Z2_homology_sphere():
-        results.append(K)
-        return Hyuntae_algo(pile, candidate_facets_ref, results,aimed_m)
+        return Hyuntae_algo(pile, candidate_facets_ref, results, aimed_m)
     else:
-        return Hyuntae_algo(pile, candidate_facets_ref, results,aimed_m)
+        results.append(K)
+        return Hyuntae_algo(pile, candidate_facets_ref, results, aimed_m)
 
 
-find_good_seeds([3, 5, 6, 9, 10, 12, 7, 11, 13, 14, 15, 8, 4, 2, 1], 11, 15)
+def Choi_Vallee_algo(pile, candidate_facets, info_facets, ridges, info_ridges):
+    return True
+
+
+facets, ridges, G = construct_graph([3,5,6,7,4, 2, 1], 4,7)
+graph_method(facets, ridges, G)
 
 # def find_minimal_facets_set(facets_set):
 #     facets_set.sort()
