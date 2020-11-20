@@ -133,7 +133,9 @@ class PureSimplicialComplex:
             self.g_vector.append(self.h_vector[i] - self.h_vector[i - 1])
 
     def faces_set_to_MNF_set(self):
-        temp_faces_list = [self.list_2_pow[self.m] - 1]
+        if not self.FP_bin:
+            self.create_FP()
+        temp_faces_list = [list_2_pow[self.m] - 1]
         k = self.m
         subface_set = bst.Node()
         subface_set.insertList(temp_faces_list)
@@ -145,29 +147,33 @@ class PureSimplicialComplex:
                     if element | face == face:
                         subface = element ^ face
                         if not subface_set.findval(subface):
-                            if k > self.n or (k == self.n and (not dichotomie(subface, self.FP_bin[k - 1]))):
+                            if k > self.n or (k == self.n and (not dichotomie(self.FP_bin[k - 1],subface))):
                                 subface_set.insert((subface, []))
-            temp_faces_list = []
-            subface_set.TreeToList(temp_faces_list)
+            temp_faces_list_data = []
+            subface_set.TreeToList(temp_faces_list_data)
+            temp_faces_list = [data[0] for data in temp_faces_list_data]
+
             k = k - 1
         # we then create the set with all subsets of [m] of size <= n not in  the given faces set
         all_non_faces = [bst.Node() for k in range(self.n + 1)]
         all_non_faces[-1] = subface_set
         for k in range(self.n - 1, -1, -1):  # dimension
-            faces = []
-            all_non_faces[k + 1].TreeToList(faces)
+            faces_data = []
+            all_non_faces[k + 1].TreeToList(faces_data)
+            faces = [data[0] for data in faces_data]
             for l in range(len(faces)):  # treat every face of dimension k
                 face = faces[l]
                 for element in self.list_2_pow[:self.m]:  # construct the (k-1)-subfaces
                     if element | face == face:
                         subface = element ^ face
-                        if (not (all_non_faces[k].findval(subface))) and (not dichotomie(subface, self.FP_bin[k])):
+                        if (not (all_non_faces[k].findval(subface))) and (not dichotomie(self.FP_bin[k], subface)): # needs to be fixed
                             all_non_faces[k].insert((subface, [l + 1]))
         MNF_set = bst.Node()
         # Here we will try every face of dimension k
         for k in range(1, self.n + 1):
-            faces_to_test = []
-            all_non_faces[k].TreeToList(faces_to_test)
+            faces_to_test_data = []
+            all_non_faces[k].TreeToList(faces_to_test_data)
+            faces_to_test = [data[0] for data in faces_to_test_data]
             for face_to_test in faces_to_test:
                 is_MNF = True
                 for element in self.list_2_pow[:self.m]:  # construct the (k-1)-subfaces
@@ -687,7 +693,9 @@ def graph_method(facets, ridges, G):
 
 
 def graph_method2(facets, ridges, G):
-    def graph_method_rec(info_ridges, info_facets, facet_layer, queued_facets, counter):
+    def graph_method_rec(info_ridges, info_facets, facet_layer, queued_facets, counter, nbr_facets, nbr_ridges,result_K):
+        if nbr_ridges>1500:
+            print("too many ridges")
         if queued_facets == []:
             if 1 not in info_ridges:
                 K = []
@@ -695,9 +703,9 @@ def graph_method2(facets, ridges, G):
                     if info_facets[i] == 1:
                         K.append(facets[i])
                 K_sp = PureSimplicialComplex(K)
-                if K_sp.Pic == 4:
-                    print(K_sp.facets_bin, "okay")
-        else:
+                if K_sp.Pic == 4 and K not in result_K_final:
+                    result_K.append(K.copy())
+        elif nbr_facets <= 80:
             # We must find the set of every unclosed ridges and find the possible facets to close them for each of them
             facets_to_close_ridges = [None for ridge in ridges]
             unclosed_ridges = []
@@ -721,7 +729,6 @@ def graph_method2(facets, ridges, G):
             ridge_can_be_skipped = [False for unclosed_ridge in unclosed_ridges]
             list_next_cases = []
             current_case = []
-            # print(counter,facets_to_close_ridges)
             def enumerate_cases_rec(k, l, current_case, ridge_can_be_skipped, list_next_cases):
                 if k == len(unclosed_ridges):
                     if current_case not in list_next_cases:
@@ -733,7 +740,7 @@ def graph_method2(facets, ridges, G):
                             # We update info ridges, the facets we add are supposed to close perfectly the last unclosed_ridges
                             for ridge_data in G[facet_index][1]:
                                 new_info_ridges[ridge_data[0]] += 1
-                        graph_method_rec(new_info_ridges, new_info_facets, facet_layer, current_case, counter + 1)
+                        graph_method_rec(new_info_ridges, new_info_facets, facet_layer, current_case, counter + 1, nbr_facets + len(current_case), nbr_ridges + len(unclosed_ridges), result_K)
                 else:
                     if ridge_can_be_skipped[k]:
                         enumerate_cases_rec(k + 1, 0, current_case, ridge_can_be_skipped, list_next_cases)
@@ -777,7 +784,10 @@ def graph_method2(facets, ridges, G):
             find_layer(G, facet_layer, new_queue, current_layer + 1)
 
     find_layer(G, facet_layer, [0], 1)
-    graph_method_rec(info_ridges, info_facets, facet_layer, queued_facets, 1)
+    result_K_final=[]
+    graph_method_rec(info_ridges, info_facets, facet_layer, queued_facets, 1, 1,11,result_K_final)
+    print("hello")
+    return result_K_final
 
 
 #
@@ -802,37 +812,38 @@ def Choi_Vallee_algo(pile, candidate_facets, info_facets, ridges, info_ridges):
     return True
 
 
-tests = [[5,6,9,10,12,7,11,13,14,15,8,4,2,1],
-         [3,6,9,10,12,7,11,13,14,15,8,4,2,1],
-         [3,5,9,10,12,7,11,13,14,15,8,4,2,1],
-         [3,5,6,10,12,7,11,13,14,15,8,4,2,1],
-         [3,5,6,9,12,7,11,13,14,15,8,4,2,1],
-         [3,5,6,9,10,7,11,13,14,15,8,4,2,1],
-         [3,5,6,9,10,12, 11,13,14,15,8,4,2,1],
-         [3,5,6,9,10,12,7,13,14,15,8,4,2,1],
-         [3,5,6,9,10,12,7,11,14,15,8,4,2,1],
-         [3,5,6,9,10,12,7,11,13,15,8,4,2,1],
-         [3,5,6,9,10,12,7,11,13,14,8,4,2,1]]
+# tests = [[5,6,9,10,12,7,11,13,14,15,8,4,2,1],
+#          [3,6,9,10,12,7,11,13,14,15,8,4,2,1],
+#          [3,5,9,10,12,7,11,13,14,15,8,4,2,1],
+#          [3,5,6,10,12,7,11,13,14,15,8,4,2,1],
+#          [3,5,6,9,12,7,11,13,14,15,8,4,2,1],
+#          [3,5,6,9,10,7,11,13,14,15,8,4,2,1],
+#          [3,5,6,9,10,12, 11,13,14,15,8,4,2,1],
+#          [3,5,6,9,10,12,7,13,14,15,8,4,2,1],
+#          [3,5,6,9,10,12,7,11,14,15,8,4,2,1],
+#          [3,5,6,9,10,12,7,11,13,15,8,4,2,1],
+#          [3,5,6,9,10,12,7,11,13,14,8,4,2,1]]
 
-# tests = []
-# for combi_iter in combinations([3,5,6,9,10,12,7,11,13,14,15],10):
-#     for perm_iter in permutations(combi_iter):
-#         tests.append(list(perm_iter)+[8,4,2,1])
+tests = []
+for combi_iter in combinations([3,5,6,9,10,12,7,11,13,14,15],6):
+    tests.append(list(combi_iter)+[8,4,2,1])
 # for perm_iter in permutations([3, 5, 6, 7]):
 #     tests.append(list(perm_iter) + [4, 2, 1])
-
-
 def f(lambda_star):
-    facets, ridges, G = construct_graph(lambda_star, 11, 15)
+    facets, ridges, G = construct_graph(lambda_star, len(lambda_star)-4, len(lambda_star))
     if facets:
-        graph_method2(facets, ridges, G)
+        print(len(graph_method2(facets, ridges, G)))
 
+# f([3,5,6,9,10,12,7,11,13,14,15,8,4,2,1])
+# f([3, 5, 6, 7, 4, 2, 1])
+if __name__ == '__main__':
+    with Pool(processes=8) as pool:  # start 4 worker processes
+        pool.map(f, tests)
 
-f([3,5,6,9,10,12,7,11,13,14,15,8,4,2,1])
+# K = PureSimplicialComplex([15, 23, 27, 46, 53, 54, 57, 60, 77, 90, 92, 101, 105, 106, 114, 116])
+# K.faces_set_to_MNF_set()
+# print(K.MNF_set_bin)
 
-# if __name__ == '__main__':
-#     with Pool(processes=1) as pool:  # start 4 worker processes
-#         pool.map(f, tests)
 
 # K = PureSimplicialComplex([15, 43, 71, 77, 78, 99, 105, 106])
 # char_funct = Garrison_Scott(K)
