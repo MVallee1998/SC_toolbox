@@ -8,6 +8,8 @@ import timeit
 import Z2_linear_algebra
 import Betti_numbers as bnbr
 from multiprocessing import Pool
+import sys
+sys.setrecursionlimit(5000)
 
 list_2_pow = [1]
 for k in range(16):
@@ -591,121 +593,22 @@ def enumerate_cases(list_of_max, k, current_list, results):
                 enumerate_cases(list_of_max, k, new_list, results)
 
 
-def graph_method(facets, ridges, G):
-    def graph_method_rec(info_ridges, info_facets, facet_layer, queued_facets, counter):
-        if not queued_facets:
-            K = []
-            # if 1 not in info_ridges:
-            #     K = []
-            #     for i in range(len(info_facets)):
-            #         if info_facets[i] == 1:
-            #             K.append(facets[i])
-            #     K.sort()
-            #     K_sp = PureSimplicialComplex(K)
-            #     if K_sp.is_Z2_homology_sphere() and K_sp.is_promising():
-            #         K_sp.create_FP()
-            #         print("coucou", counter, K_sp.n, K_sp.m, K)
-
-        else:
-            list_cases = []
-            # here we create the list of the cases for each facet whose ridges are unclosed
-            for facet_index in queued_facets:
-                list_of_max = []
-                for list_neighbours in G[facet_index][1]:
-                    position_ridge = list_neighbours[0]
-                    if info_ridges[position_ridge] == 2:
-                        list_of_max.append(-1)
-                    else:
-                        list_of_max.append(len(list_neighbours[1]))
-                list_cases_current = []
-                enumerate_cases(list_of_max, 0, [-1] * len(list_of_max), list_cases_current)
-                list_cases.append(list_cases_current.copy())
-            list_cases_ref = list_cases.copy()
-            info_ridges_ref = info_ridges.copy()
-            info_facets_ref = info_facets.copy()
-            k = 0
-            list_facets_to_add = []
-            while k > -1:
-                problem_ridges = False
-                current_facet = queued_facets[k]
-                if list_cases[k] == []:
-                    list_cases[k] = list_cases_ref[k].copy()
-                    k -= 1
-                    continue
-                if k == 0:
-                    list_facets_to_add = []
-                    info_ridges = info_ridges_ref.copy()
-                    info_facets = info_facets_ref.copy()
-                index_facets_to_add = list_cases[k].pop(0)
-                info_facets_bak = info_facets.copy()
-                info_ridges_bak = info_ridges.copy()
-                for colour_index in range(len(index_facets_to_add)):
-                    index_facet = index_facets_to_add[colour_index]
-                    if index_facet != -1:  # if this ridge is not already closed
-                        other_facets = [i for i in range(len(G[current_facet])) if i != index_facet]
-                        for index_other_facet in other_facets:
-                            other_facet = G[current_facet][1][colour_index][1][index_other_facet]
-                            info_facets[other_facet] = -1
-                        new_facet = G[current_facet][1][colour_index][1][index_facet]
-                        if info_facets[new_facet] != 1 and facet_layer[new_facet] == counter:
-                            list_facets_to_add.append(new_facet)
-                            info_facets[new_facet] = 1
-                            for ridge_data in G[new_facet][1]:
-                                info_ridges[ridge_data[0]] += 1
-                                if info_ridges[ridge_data[0]] > 2:  # maybe this problem
-                                    problem_ridges = True
-                                    break
-                            if problem_ridges:
-                                break
-                if problem_ridges:
-                    list_facets_to_add.pop()
-                    info_ridges = info_ridges_bak.copy()
-                    info_facets = info_facets_bak.copy()
-                    k -= 1
-                    continue
-                if (k + 1 == len(list_cases)):
-                    graph_method_rec(info_ridges, info_facets, facet_layer, list_facets_to_add.copy(), counter + 1)
-                else:
-                    k += 1
-
-    facet_layer = [-1 for facet in facets]
-    info_ridges = [0 for ridge in ridges]
-    info_facets = [0 for facet in facets]
-    queued_facets = [0]
-    info_facets[0] = 1
-    facet_layer[0] = 0
-
-    def find_layer(G, facet_layer, queue, current_layer):
-        if -1 in facet_layer:
-            new_queue = []
-            for facet_index in queue:
-                for data_ridges in G[facet_index][1]:
-                    for neighbor_facet_index in data_ridges[1]:
-                        if facet_layer[neighbor_facet_index] == -1:
-                            facet_layer[neighbor_facet_index] = current_layer
-                            new_queue.append(neighbor_facet_index)
-            find_layer(G, facet_layer, new_queue, current_layer + 1)
-
-    for data_ridges in G[0][1]:
-        info_ridges[data_ridges[0]] += 1
-    find_layer(G, facet_layer, [0], 1)
-    graph_method_rec(info_ridges, info_facets, facet_layer, queued_facets, 0)
-
-
 def graph_method2(facets, ridges, G):
-    def graph_method_rec(info_ridges, info_facets, facet_layer, queued_facets, counter, nbr_facets, nbr_ridges,result_K):
+    def graph_method_rec(info_ridges, info_facets, facet_layer, queued_facets, counter, nbr_facets, nbr_ridges ,result_K,max_counter):
         if nbr_ridges>1500:
             print("too many ridges")
-        if queued_facets == []:
-            if 1 not in info_ridges:
-                K = []
-                for i in range(len(info_facets)):
-                    if info_facets[i] == 1:
-                        K.append(facets[i])
-                K_sp = PureSimplicialComplex(K)
-                if K_sp.Pic == 4 and K not in result_K_final:
-                    result_K.append(K.copy())
-        elif nbr_facets <= 80:
+        if counter == max_counter:
+            # K = []
+            # for i in range(len(info_facets)):
+            #     if info_facets[i] == 1:
+            #         K.append(facets[i])
+            # K_sp = PureSimplicialComplex(K)
+            if len(result_K)%1000 == 0:
+                print(len(result_K))
+            result_K.append((info_ridges,info_facets,queued_facets,nbr_facets,nbr_ridges))
+                # if K_sp.Pic == 3 and K not in result_K_final:
+                #     result_K.append(K.copy())
+        elif nbr_facets <= 252:
             # We must find the set of every unclosed ridges and find the possible facets to close them for each of them
             facets_to_close_ridges = [None for ridge in ridges]
             unclosed_ridges = []
@@ -722,47 +625,60 @@ def graph_method2(facets, ridges, G):
                                 candidate_facet_index] == counter:  # this condition is enough, because the facets already used are in the previous layer
                                 facets_to_close_ridges[ridge_index].append(candidate_facet_index)
                         if facets_to_close_ridges[ridge_index] == []:
-                            return False  # in this case, we found no candidate...
+                            return []  # in this case, we found no candidate...
             # Now we have all the unclosed ridges with for each of them a list of candidates to close it
             # We need a recursive function to select a case
             unclosed_ridges.sort()  # like this, we can use dichotomie for finding an element in the list
             ridge_can_be_skipped = [False for unclosed_ridge in unclosed_ridges]
             list_next_cases = []
             current_case = []
-            def enumerate_cases_rec(k, l, current_case, ridge_can_be_skipped, list_next_cases):
+            forbidden_facets = [False for facet in facets]
+            def enumerate_cases_rec(k, l, current_case, ridge_can_be_skipped,forbidden_facets,transition_info_ridges, list_next_cases):
                 if k == len(unclosed_ridges):
                     if current_case not in list_next_cases:
-                        # list_next_cases.append(current_case)
-                        new_info_ridges = info_ridges.copy()
+                        list_next_cases.append(current_case)
+                        new_info_ridges = transition_info_ridges
                         new_info_facets = info_facets.copy()
                         for facet_index in current_case:
                             new_info_facets[facet_index] = 1
                             # We update info ridges, the facets we add are supposed to close perfectly the last unclosed_ridges
-                            for ridge_data in G[facet_index][1]:
-                                new_info_ridges[ridge_data[0]] += 1
-                        graph_method_rec(new_info_ridges, new_info_facets, facet_layer, current_case, counter + 1, nbr_facets + len(current_case), nbr_ridges + len(unclosed_ridges), result_K)
+                            # for ridge_data in G[facet_index][1]:
+                            #     new_info_ridges[ridge_data[0]] += 1
+                        graph_method_rec(new_info_ridges, new_info_facets, facet_layer, current_case, counter + 1, nbr_facets + len(current_case), nbr_ridges + len(unclosed_ridges), result_K,max_counter)
                 else:
-                    if ridge_can_be_skipped[k]:
-                        enumerate_cases_rec(k + 1, 0, current_case, ridge_can_be_skipped, list_next_cases)
+                    if transition_info_ridges[unclosed_ridges[k]]==2:
+                        enumerate_cases_rec(k + 1, 0, current_case, ridge_can_be_skipped,forbidden_facets,transition_info_ridges, list_next_cases)
                     else:
                         if l + 1 < len(facets_to_close_ridges[unclosed_ridges[k]]):
-                            enumerate_cases_rec(k, l + 1, current_case, ridge_can_be_skipped, list_next_cases)
+                            enumerate_cases_rec(k, l + 1, current_case, ridge_can_be_skipped,forbidden_facets,transition_info_ridges, list_next_cases)
                         facet_to_add = facets_to_close_ridges[unclosed_ridges[k]][l]
-                        new_ridge_can_be_skipped = ridge_can_be_skipped.copy()
-                        for ridge_data in G[facet_to_add][1]:
-                            ridge_index = ridge_data[0]
-                            if info_ridges[ridge_index] == 1:
-                                position_in_unclosed_ridges = dichotomie(unclosed_ridges, ridge_index)
-                                if position_in_unclosed_ridges > -1:
-                                    new_ridge_can_be_skipped[position_in_unclosed_ridges] = True
-                        enumerate_cases_rec(k + 1, 0, current_case + [facet_to_add], new_ridge_can_be_skipped,
+                        if not forbidden_facets[facet_to_add]:
+                            new_ridge_can_be_skipped = ridge_can_be_skipped.copy()
+                            new_forbidden_facets = forbidden_facets.copy()
+                            new_transition_info_ridges = transition_info_ridges.copy()
+                            for facet in facets_to_close_ridges[unclosed_ridges[k]]:
+                                new_forbidden_facets[facet] = True
+                            problem = False
+                            for ridge_data in G[facet_to_add][1]:
+                                ridge_index = ridge_data[0]
+                                new_transition_info_ridges[ridge_index]+=1
+                                if new_transition_info_ridges[ridge_index]>2:
+                                    problem = True
+                                    break
+                                if info_ridges[ridge_index] == 1:
+                                    position_in_unclosed_ridges = dichotomie(unclosed_ridges, ridge_index)
+                                    if position_in_unclosed_ridges > -1:
+                                        new_ridge_can_be_skipped[position_in_unclosed_ridges] = True
+                                        for facet in facets_to_close_ridges[unclosed_ridges[position_in_unclosed_ridges]]:
+                                            new_forbidden_facets[facet] = True
+                            if not problem:
+                                enumerate_cases_rec(k + 1, 0, current_case + [facet_to_add], new_ridge_can_be_skipped,new_forbidden_facets,new_transition_info_ridges,
                                             list_next_cases)
             # print("hello")
-            enumerate_cases_rec(0, 0, current_case, ridge_can_be_skipped, list_next_cases)
+            enumerate_cases_rec(0, 0, current_case, ridge_can_be_skipped,forbidden_facets,info_ridges.copy(), list_next_cases)
             # print(len(list_next_cases))
             # if list_next_cases:
             #     for next_case in list_next_cases:
-
 
     facet_layer = [-1 for facet in facets]
     info_ridges = [0 for ridge in ridges]
@@ -782,11 +698,9 @@ def graph_method2(facets, ridges, G):
                             facet_layer[neighbor_facet_index] = current_layer
                             new_queue.append(neighbor_facet_index)
             find_layer(G, facet_layer, new_queue, current_layer + 1)
-
     find_layer(G, facet_layer, [0], 1)
     result_K_final=[]
-    graph_method_rec(info_ridges, info_facets, facet_layer, queued_facets, 1, 1,11,result_K_final)
-    print("hello")
+    graph_method_rec(info_ridges, info_facets, facet_layer, queued_facets, 1, 1, 11,result_K_final,max_counter)
     return result_K_final
 
 
@@ -825,20 +739,21 @@ def Choi_Vallee_algo(pile, candidate_facets, info_facets, ridges, info_ridges):
 #          [3,5,6,9,10,12,7,11,13,14,8,4,2,1]]
 
 tests = []
-for combi_iter in combinations([3,5,6,9,10,12,7,11,13,14,15],6):
-    tests.append(list(combi_iter)+[8,4,2,1])
+# for combi_iter in combinations([3,5,6,9,10,12,7,11,13,14,15],6):
+#     tests.append(list(combi_iter)+[8,4,2,1])
 # for perm_iter in permutations([3, 5, 6, 7]):
 #     tests.append(list(perm_iter) + [4, 2, 1])
 def f(lambda_star):
     facets, ridges, G = construct_graph(lambda_star, len(lambda_star)-4, len(lambda_star))
     if facets:
-        print(len(graph_method2(facets, ridges, G)))
+        print(graph_method2(facets, ridges, G))
 
-# f([3,5,6,9,10,12,7,11,13,14,15,8,4,2,1])
+f([3,5,6,9,10,12,7,11,13,14,15,8,4,2,1])
+
 # f([3, 5, 6, 7, 4, 2, 1])
-if __name__ == '__main__':
-    with Pool(processes=8) as pool:  # start 4 worker processes
-        pool.map(f, tests)
+# if __name__ == '__main__':
+#     with Pool(processes=8) as pool:  # start 4 worker processes
+#         pool.map(f, tests)
 
 # K = PureSimplicialComplex([15, 23, 27, 46, 53, 54, 57, 60, 77, 90, 92, 101, 105, 106, 114, 116])
 # K.faces_set_to_MNF_set()
