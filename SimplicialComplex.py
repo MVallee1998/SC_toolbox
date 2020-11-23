@@ -593,21 +593,25 @@ def enumerate_cases(list_of_max, k, current_list, results):
                 enumerate_cases(list_of_max, k, new_list, results)
 
 
-def graph_method2(facets, ridges, G):
+def graph_method2(facets, ridges, G, max_counter, starting_point=None):
     def graph_method_rec(info_ridges, info_facets, facet_layer, queued_facets, counter, nbr_facets, nbr_ridges ,result_K,max_counter):
         if nbr_ridges>1500:
             print("too many ridges")
-        if counter == max_counter:
-            # K = []
-            # for i in range(len(info_facets)):
-            #     if info_facets[i] == 1:
-            #         K.append(facets[i])
-            # K_sp = PureSimplicialComplex(K)
+        if max_counter == 0 and queued_facets == []:
+            if 1 not in info_ridges:
+                K =[]
+                for k in range(len(info_facets)):
+                    if info_facets[k]==1:
+                        K.append(facets[k])
+                K.sort()
+                print(K)
+                result_K.append(K)
+            # if K_sp.Pic == 3 and K not in result_K_final:
+            #     result_K.append(K.copy())
+        elif counter == max_counter:
             if len(result_K)%1000 == 0:
                 print(len(result_K))
-            result_K.append((info_ridges,info_facets,queued_facets,nbr_facets,nbr_ridges))
-                # if K_sp.Pic == 3 and K not in result_K_final:
-                #     result_K.append(K.copy())
+            result_K.append((info_ridges,info_facets,queued_facets,counter,nbr_facets,nbr_ridges))
         elif nbr_facets <= 252:
             # We must find the set of every unclosed ridges and find the possible facets to close them for each of them
             facets_to_close_ridges = [None for ridge in ridges]
@@ -679,15 +683,8 @@ def graph_method2(facets, ridges, G):
             # print(len(list_next_cases))
             # if list_next_cases:
             #     for next_case in list_next_cases:
-
     facet_layer = [-1 for facet in facets]
-    info_ridges = [0 for ridge in ridges]
-    info_facets = [0 for facet in facets]
-    queued_facets = [0]
-    info_facets[0] = 1
     facet_layer[0] = 0
-    for data_ridges in G[0][1]:
-        info_ridges[data_ridges[0]] += 1
     def find_layer(G, facet_layer, queue, current_layer):
         if -1 in facet_layer:
             new_queue = []
@@ -699,9 +696,21 @@ def graph_method2(facets, ridges, G):
                             new_queue.append(neighbor_facet_index)
             find_layer(G, facet_layer, new_queue, current_layer + 1)
     find_layer(G, facet_layer, [0], 1)
-    result_K_final=[]
-    graph_method_rec(info_ridges, info_facets, facet_layer, queued_facets, 1, 1, 11,result_K_final,max_counter)
-    return result_K_final
+    if starting_point == None:
+        info_ridges = [0 for ridge in ridges]
+        info_facets = [0 for facet in facets]
+        queued_facets = [0]
+        info_facets[0] = 1
+        for data_ridges in G[0][1]:
+            info_ridges[data_ridges[0]] += 1
+        result_K_final=[]
+        graph_method_rec(info_ridges, info_facets, facet_layer, queued_facets, 1, 1, 11,result_K_final,max_counter)
+        return result_K_final
+    else:
+        result_K_final=[]
+        (info_ridges, info_facets, queued_facets, counter, nbr_facets, nbr_ridges) = starting_point
+        graph_method_rec(info_ridges, info_facets, facet_layer, queued_facets, counter, nbr_facets, nbr_ridges, result_K_final, max_counter)
+
 
 
 #
@@ -743,17 +752,15 @@ tests = []
 #     tests.append(list(combi_iter)+[8,4,2,1])
 # for perm_iter in permutations([3, 5, 6, 7]):
 #     tests.append(list(perm_iter) + [4, 2, 1])
-def f(lambda_star):
-    facets, ridges, G = construct_graph(lambda_star, len(lambda_star)-4, len(lambda_star))
-    if facets:
-        print(graph_method2(facets, ridges, G))
+facets, ridges, G = construct_graph([3, 5, 6, 9, 10, 12, 7, 11, 13, 14, 15, 8, 4, 2, 1], 11, 15)
+def f(starting_point):
+    print(graph_method2(facets, ridges, G, 0, starting_point))
 
-f([3,5,6,9,10,12,7,11,13,14,15,8,4,2,1])
 
-# f([3, 5, 6, 7, 4, 2, 1])
-# if __name__ == '__main__':
-#     with Pool(processes=8) as pool:  # start 4 worker processes
-#         pool.map(f, tests)
+if __name__ == '__main__':
+    step2 = graph_method2(facets, ridges, G, 2)
+    with Pool(processes=8) as pool:  # start 4 worker processes
+        pool.map(f, step2)
 
 # K = PureSimplicialComplex([15, 23, 27, 46, 53, 54, 57, 60, 77, 90, 92, 101, 105, 106, 114, 116])
 # K.faces_set_to_MNF_set()
