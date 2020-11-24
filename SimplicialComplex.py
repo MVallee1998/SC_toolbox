@@ -759,7 +759,7 @@ def f(starting_point):
 
 if __name__ == '__main__':
     step2 = graph_method2(facets, ridges, G, 2)
-    with Pool(processes=8) as pool:  # start 4 worker processes
+    with Pool(processes=20) as pool:  # start 4 worker processes
         pool.map(f, step2)
 
 # K = PureSimplicialComplex([15, 23, 27, 46, 53, 54, 57, 60, 77, 90, 92, 101, 105, 106, 114, 116])
