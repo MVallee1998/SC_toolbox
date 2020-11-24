@@ -754,15 +754,24 @@ tests = []
 # for perm_iter in permutations([3, 5, 6, 7]):
 #     tests.append(list(perm_iter) + [4, 2, 1])
 facets, ridges, G = construct_graph([12,7,11,13,14,15,8,4,2,1], 6, 10)
+big_result = []
+name = 'result/PLS_test'
+t = open(name, mode='a', encoding='utf-8')
+def text(result):
+    for K in result:
+        t.write(str(K) + '\n')
+
+
 def f(starting_point):
-    print(graph_method2(facets, ridges, G, 0, starting_point))
+    result = graph_method2(facets, ridges, G, 0, starting_point)
+    text(result)
 
 
 if __name__ == '__main__':
     step2 = graph_method2(facets, ridges, G, 2)
-    with Pool(processes=7) as pool:  # start 4 worker processes
+    with Pool(processes=19) as pool:  # start 4 worker processes
         pool.map(f, step2)
-
+    t.close()
 # K = PureSimplicialComplex([15, 23, 27, 46, 53, 54, 57, 60, 77, 90, 92, 101, 105, 106, 114, 116])
 # K.faces_set_to_MNF_set()
 # print(K.MNF_set_bin)
