@@ -602,8 +602,7 @@ def graph_method2(facets, ridges, G, max_counter, starting_point=None):
                             K.append(facets[k])
                     K.sort()
                     # print(K,counter)
-                    if len(K)==14:
-                        result_K.append(K)
+                    result_K.append(K)
                 # if K_sp.Pic == 3 and K not in result_K_final:
                 #     result_K.append(K.copy())
             elif counter == max_counter:
@@ -754,6 +753,25 @@ tests = []
 #     tests.append(list(perm_iter) + [4, 2, 1])
 
 
+# facets, ridges, G = construct_graph([6,12,7,11,13,14,15,8,4,2,1], 7, 11)
+# big_result = []
+# name = 'result/PLS_test'
+# t = open(name, mode='a', encoding='utf-8')
+# def text(result):
+#     for K in result:
+#         t.write(str(K) + '\n')
+#
+#
+# def f(starting_point):
+#     result = graph_method2(facets, ridges, G, 0, starting_point)
+#     text(result)
+#
+#
+# if __name__ == '__main__':
+#     step2 = graph_method2(facets, ridges, G, 2)
+#     with Pool(processes=19) as pool:  # start 4 worker processes
+#         pool.map(f, step2)
+#     t.close()
 
 
 # facets, ridges, G = construct_graph([3,5,6,7,4,2,1], 4, 7)
