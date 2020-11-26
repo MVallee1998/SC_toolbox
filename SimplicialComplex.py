@@ -493,7 +493,7 @@ def Garrison_Scott(K):
     K_full_FP = []
     for k in range(K.n):
         for face in K.FP_bin[k]:
-            K_full_FP.append(face)
+            K_full_FP.append(face[0])
     current_lambda = []
     i = K.n
     for k in range(K.n):
@@ -501,8 +501,6 @@ def Garrison_Scott(K):
     for k in range(K.n, K.m):
         current_lambda.append(0)
     while i >= K.n:
-        if len(list_char_funct) % 1000 == 0:
-            print(len(list_char_funct))
         for face_bin in K_full_FP:
             if (face_bin < list_2_pow[i + 1]) and ((face_bin | list_2_pow[i]) == face_bin):
                 linear_comb = 0
@@ -604,7 +602,8 @@ def graph_method2(facets, ridges, G, max_counter, starting_point=None):
                             K.append(facets[k])
                     K.sort()
                     # print(K,counter)
-                    result_K.append(K)
+                    if len(K)==14:
+                        result_K.append(K)
                 # if K_sp.Pic == 3 and K not in result_K_final:
                 #     result_K.append(K.copy())
             elif counter == max_counter:
@@ -753,15 +752,22 @@ tests = []
 #     tests.append(list(combi_iter)+[8,4,2,1])
 # for perm_iter in permutations([3, 5, 6, 7]):
 #     tests.append(list(perm_iter) + [4, 2, 1])
-facets, ridges, G = construct_graph([12,7,11,13,14,15,8,4,2,1], 6, 10)
-def f(starting_point):
-    print(graph_method2(facets, ridges, G, 0, starting_point))
 
 
-if __name__ == '__main__':
-    step2 = graph_method2(facets, ridges, G, 2)
-    with Pool(processes=7) as pool:  # start 4 worker processes
-        pool.map(f, step2)
+
+
+# facets, ridges, G = construct_graph([3,5,6,7,4,2,1], 4, 7)
+# def f(starting_point):
+#     print(graph_method2(facets, ridges, G, 0, starting_point))
+#
+#
+# if __name__ == '__main__':
+#     step2 = graph_method2(facets, ridges, G, 2)
+#     with Pool(processes=7) as pool:  # start 4 worker processes
+#         pool.map(f, step2)
+
+
+
 
 # K = PureSimplicialComplex([15, 23, 27, 46, 53, 54, 57, 60, 77, 90, 92, 101, 105, 106, 114, 116])
 # K.faces_set_to_MNF_set()
