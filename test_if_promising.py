@@ -1,4 +1,3 @@
-import Partial_Enum_PLS_IDCM
 import SimplicialComplex as sc
 import json
 
@@ -8,15 +7,25 @@ def read_file(filename):
     data = [x.strip() for x in data]
     return data
 
-results = read_file('result/PLS_test')
+def text(result):
+    name = 'result/PLS_9_5'
+    t = open(name, mode='a', encoding='utf-8')
+    for K in result:
+        t.write(str(K) + '\n')
+    t.close()
+
+results = read_file('result/PLS_9_5_temp')
 
 K_result=[]
 l=0
 
 for K_bytes in results:
+    l+=1
+    if l%50==0:
+        print(l/len(results))
     K_bin= json.loads(K_bytes)
-    K_sp = sc.PureSimplicialComplex()
-    if K_sp.is_Z2_homology_sphere():
+    K_sp = sc.PureSimplicialComplex(K_bin)
+    if K_sp.is_promising():
         if K_bin not in K_result:
             K_result.append(K_bin)
 
@@ -34,4 +43,5 @@ for K_bytes in results:
     # Chain, Ind = Partial_Enum_PLS_IDCM.Chain_cpx(K, 6)
     # if Partial_Enum_PLS_IDCM.is_Homology_Sphere(Chain, Ind) and K not in K_result:
     #     K_result.append(K)
-print(K_result)
+K_result.sort()
+text(K_result)

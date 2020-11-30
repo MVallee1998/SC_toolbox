@@ -562,6 +562,7 @@ def enumerate_facets_and_ridges(char_function, n, m):
                 if not ridge in ridges:
                     ridges.append(ridge)
     ridges.sort()
+    print("Facets and ridges enumerated")
     return candidate_facets, ridges
 
 
@@ -588,6 +589,7 @@ def construct_graph(char_funct, n, m):
         #         G[i][2].append((j,ridge_index))
         #         if ridge_index not in G[i][1]:
         #             G[i][1].append(ridge_index)
+    print("Graph constructed")
     return facets, ridges, G
 
 
@@ -759,6 +761,7 @@ def initialize_graph_method3(facets, ridges,G, facet_layer, n, m):
          facets_for_ridge in facets_for_ridges] for k in range(1, m - n + 1)]
 
     ridges_of_facets = [[ridge_data[0] for ridge_data in G[k][1]] for k in range(len(G))]
+    print("graph method initialized")
     return facets_for_ridges, facets_for_ridges_with_layer, ridges_of_facets
 
 
@@ -796,7 +799,6 @@ def graph_method3(facets,ridges,facets_for_ridges, facets_for_ridges_with_layer,
                                 new_current_info_ridges = current_info_ridges.copy()
                                 new_current_info_facets[index_candidate_facet] = True
                                 new_current_info_ridges[ridges_of_facets[index_candidate_facet]] += 1
-                                filter = np.where(new_current_info_ridges == 2)
                                 for index_newly_closed_ridge in np.where(new_current_info_ridges == 2)[0]:
                                     new_current_forbidden_facets[facets_for_ridges[int(index_newly_closed_ridge)]] = True
                                 enumerate_cases(index_of_unclosed_ridges, k + 1, 0, new_current_info_facets,
