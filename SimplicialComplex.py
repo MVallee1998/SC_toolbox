@@ -4,6 +4,7 @@ from itertools import combinations, permutations
 import Z2_linear_algebra
 import Betti_numbers as bnbr
 import sys
+import numpy as np
 
 sys.setrecursionlimit(5000)
 
@@ -794,12 +795,10 @@ def graph_method3(facets,ridges,facets_for_ridges, facets_for_ridges_with_layer,
                                 new_current_forbidden_facets = current_forbidden_facets.copy()
                                 new_current_info_ridges = current_info_ridges.copy()
                                 new_current_info_facets[index_candidate_facet] = True
-                                for index_newly_closed_ridge in ridges_of_facets[index_candidate_facet]:
-                                    new_current_info_ridges[index_newly_closed_ridge] += 1
-                                    if new_current_info_ridges[index_newly_closed_ridge] == 2:
-                                        for index_new_forbidden_facet in facets_for_ridges[index_newly_closed_ridge]:
-                                            new_current_forbidden_facets[index_new_forbidden_facet] = True
-                                            # the newly added Facet will be forbidden also
+                                new_current_info_ridges[ridges_of_facets[index_candidate_facet]] += 1
+                                filter = np.where(new_current_info_ridges == 2)
+                                for index_newly_closed_ridge in np.where(new_current_info_ridges == 2)[0]:
+                                    new_current_forbidden_facets[facets_for_ridges[int(index_newly_closed_ridge)]] = True
                                 enumerate_cases(index_of_unclosed_ridges, k + 1, 0, new_current_info_facets,
                                                 new_current_forbidden_facets, new_current_info_ridges)
 
@@ -816,12 +815,11 @@ def graph_method3(facets,ridges,facets_for_ridges, facets_for_ridges_with_layer,
     if starting_state == None:
         # here is some initialization
         info_facets = [False for facet in facets]
-        forbidden_facets = [False for facet in facets]
+        forbidden_facets = np.array([False for facet in facets])
         info_facets[0] = True
         forbidden_facets[0] = True
-        info_ridges = [0 for ridge in ridges]
-        for index_ridge_of_initial_facet in ridges_of_facets[0]:
-            info_ridges[index_ridge_of_initial_facet] += 1
+        info_ridges = np.zeros(len(ridges))
+        info_ridges[ridges_of_facets[0]] += 1
         result = []
         graph_method_3_rec(info_facets, forbidden_facets, info_ridges, starting_layer, result)
         return result
