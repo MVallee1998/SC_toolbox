@@ -800,7 +800,7 @@ def graph_method3(facets,ridges,facets_for_ridges, facets_for_ridges_with_layer,
                                 new_current_info_facets[index_candidate_facet] = True
                                 new_current_info_ridges[ridges_of_facets[index_candidate_facet]] += 1
                                 for index_newly_closed_ridge in np.where(new_current_info_ridges == 2)[0]:
-                                    new_current_forbidden_facets[facets_for_ridges[int(index_newly_closed_ridge)]] = True
+                                    new_current_forbidden_facets[facets_for_ridges[int(index_newly_closed_ridge)]] = True # changer
                                 enumerate_cases(index_of_unclosed_ridges, k + 1, 0, new_current_info_facets,
                                                 new_current_forbidden_facets, new_current_info_ridges)
 

@@ -1,7 +1,7 @@
 import SimplicialComplex as sc
 from multiprocessing import Pool
 from itertools import combinations, permutations
-
+import timeit
 
 n = 5
 m = 9
@@ -23,7 +23,8 @@ def f(data):
 if __name__ == '__main__':
     k=0
     final_result = []
-    for combi_iter in combinations([3, 5, 6, 9, 10, 12, 7, 11, 13, 14, 15], 5):
+    start = timeit.default_timer()
+    for combi_iter in combinations([3, 5, 6, 9, 10, 12, 7, 11, 13, 14, 15], n):
         k+=1
         # for perm_iter in permutations([3, 5, 6, 7]):
         #     tests.append(list(perm_iter) + [4, 2, 1])
@@ -48,6 +49,8 @@ if __name__ == '__main__':
                 for K in result:
                     if K not in final_result:
                         final_result.append(K)
+        stop = timeit.default_timer()
+        print("Time spent: ", stop-start)
     text(final_result)
 
 #
