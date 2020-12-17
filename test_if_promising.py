@@ -1,11 +1,13 @@
 import SimplicialComplex as sc
 import json
 
+
 def read_file(filename):
     with open(filename, 'rb') as f:
         data = f.readlines()
     data = [x.strip() for x in data]
     return data
+
 
 def text(result):
     name = 'result/PLS_9_5'
@@ -14,16 +16,17 @@ def text(result):
         t.write(str(K) + '\n')
     t.close()
 
+
 results = read_file('result/PLS_9_5_temp')
 
-K_result=[]
-l=0
+K_result = []
+l = 0
 
 for K_bytes in results:
-    l+=1
-    if l%50==0:
-        print(l/len(results))
-    K_bin= json.loads(K_bytes)
+    l += 1
+    if l % 50 == 0:
+        print(l / len(results))
+    K_bin = json.loads(K_bytes)
     K_sp = sc.PureSimplicialComplex(K_bin)
     if K_sp.is_promising():
         if K_bin not in K_result:
