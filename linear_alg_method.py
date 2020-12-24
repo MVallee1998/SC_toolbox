@@ -31,7 +31,7 @@ def construct_matrix(char_function, n, m):
                 if not ridge in ridges:
                     ridges.append(ridge)
     ridges.sort()
-    print("Facets and ridges enumerated")
+    # print("Facets and ridges enumerated")
     M = np.zeros((len(ridges), len(facets)))
     for j in range(len(facets)):
         for element in list_2_pow:

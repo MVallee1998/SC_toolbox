@@ -231,17 +231,19 @@ def initialize_graph_method3(facets, ridges, G, facet_layer, n, m):
     return facets_for_ridges, facets_for_ridges_with_layer, ridges_of_facets
 
 
-def graph_method3(facets, ridges, facets_for_ridges, facets_for_ridges_with_layer, ridges_of_facets, n, m,
-                  starting_layer, max_layer,
-                  starting_state=None):
+def graph_method3_with_rec(facets, ridges, facets_for_ridges, facets_for_ridges_with_layer, ridges_of_facets, n, m,
+                           starting_layer, max_layer,
+                           starting_state=None):
     def graph_method_3_rec(info_facets, forbidden_facets, info_ridges, current_layer, results):
         if current_layer == max_layer:
             results.append((info_facets, forbidden_facets, info_ridges))
-        elif not (info_ridges == 1).any():
-            K = sc.PureSimplicialComplex([facets[index] for index in range(len(info_facets)) if info_facets[index]])
-            if K.Pic == 3 and K.is_promising() and K.is_Z2_homology_sphere():
-                results.append(K)
-            # print([1*facet for facet in info_facets])
+        # elif current_layer > m - n:
+        #     if 1 not in info_ridges:
+        #         results.append([facets[index] for index in range(len(info_facets)) if info_facets[index]])
+        #     # K = sc.PureSimplicialComplex([facets[index] for index in range(len(info_facets)) if info_facets[index]])
+        #     # if K.Pic == 4 and K.is_promising() and K.is_Z2_homology_sphere():
+        #     #     results.append(K)
+        #     # print([1*facet for facet in info_facets])
         else:
             def enumerate_cases(index_of_unclosed_ridges, k, l, current_info_facets, current_forbidden_facets,
                                 current_info_ridges):
@@ -266,19 +268,25 @@ def graph_method3(facets, ridges, facets_for_ridges, facets_for_ridges_with_laye
                                 new_current_forbidden_facets = current_forbidden_facets.copy()
                                 new_current_info_ridges = current_info_ridges.copy()
                                 new_current_info_facets[index_candidate_facet] = True
-                                new_current_info_ridges[ridges_of_facets[index_candidate_facet]] += 1
-                                for index_newly_closed_ridge in \
-                                np.where(np.logical_and(new_current_info_ridges == 2, current_info_ridges == 1))[0]:
-                                    new_current_forbidden_facets[
-                                        facets_for_ridges[int(index_newly_closed_ridge)]] = True  # changer
+                                for index_newly_closed_ridge in ridges_of_facets[index_candidate_facet]:
+                                    new_current_info_ridges[index_newly_closed_ridge] += 1
+                                    if new_current_info_ridges[index_newly_closed_ridge] == 2:
+                                        for index_new_forbidden_facet in facets_for_ridges[index_newly_closed_ridge]:
+                                            new_current_forbidden_facets[index_new_forbidden_facet] |= True
+                                # new_current_info_ridges[ridges_of_facets[index_candidate_facet]] += 1
+                                # for index_newly_closed_ridge in \
+                                # np.where(np.logical_and(new_current_info_ridges == 2, current_info_ridges == 1))[0]:
+                                #     new_current_forbidden_facets[
+                                #         facets_for_ridges[int(index_newly_closed_ridge)]] = True  # changer
                                 enumerate_cases(index_of_unclosed_ridges, k + 1, 0, new_current_info_facets,
                                                 new_current_forbidden_facets, new_current_info_ridges)
 
             index_of_unclosed_ridges = [index_ridge for index_ridge in range(len(info_ridges)) if
                                         info_ridges[index_ridge] == 1]
             if index_of_unclosed_ridges != []:
-                enumerate_cases(index_of_unclosed_ridges, 0, 0, info_facets.copy(), forbidden_facets.copy(),
-                                info_ridges.copy())
+                if current_layer<=len(facets_for_ridges_with_layer):
+                    enumerate_cases(index_of_unclosed_ridges, 0, 0, info_facets.copy(), forbidden_facets.copy(),
+                            info_ridges.copy())
             else:
                 if max_layer == -1:
                     result.append([facets[index] for index in range(len(info_facets)) if info_facets[index]])
@@ -287,11 +295,12 @@ def graph_method3(facets, ridges, facets_for_ridges, facets_for_ridges_with_laye
     if starting_state == None:
         # here is some initialization
         info_facets = [False for facet in facets]
-        forbidden_facets = np.array([False for facet in facets])
+        forbidden_facets = [False for facet in facets]
         info_facets[0] = True
         forbidden_facets[0] = True
-        info_ridges = np.zeros(len(ridges))
-        info_ridges[ridges_of_facets[0]] += 1
+        info_ridges = [0 for ridge in ridges]
+        for ridge_index in ridges_of_facets[0]:
+            info_ridges[ridge_index] += 1
         result = []
         graph_method_3_rec(info_facets, forbidden_facets, info_ridges, starting_layer, result)
         return result
@@ -300,3 +309,160 @@ def graph_method3(facets, ridges, facets_for_ridges, facets_for_ridges_with_laye
         result = []
         graph_method_3_rec(info_facets, forbidden_facets, info_ridges, starting_layer, result)
         return (result)
+
+
+def graph_method3_with_iter(facets, ridges, facets_for_ridges, facets_for_ridges_with_layer, ridges_of_facets, n, m,
+                            starting_layer, max_layer,
+                            starting_state=None):
+    def graph_method_3_rec(info_facets, forbidden_facets, info_ridges, current_layer, results):
+        if current_layer == max_layer:
+            results.append((info_facets, forbidden_facets, info_ridges))
+        # elif current_layer >= m - n:
+        #     if 1 not in info_ridges:
+        #         # results.append([facets[index] for index in range(len(info_facets)) if info_facets[index]])
+        #         K = sc.PureSimplicialComplex([facets[index] for index in range(len(info_facets)) if info_facets[index]])
+        #         if K.Pic == 2 and K.is_promising() and K.is_Z2_homology_sphere():
+        #             results.append(K)
+        #         print([1*facet for facet in info_facets])
+        else:
+            index_of_unclosed_ridges = [index_ridge for index_ridge in range(len(info_ridges)) if
+                                        info_ridges[index_ridge] == 1]
+            if index_of_unclosed_ridges != []:
+                index_to_start = [0 for index_ridge in index_of_unclosed_ridges]
+                info_facets_data = [info_facets.copy() for index_ridge in index_of_unclosed_ridges]
+                info_ridges_data = [info_ridges.copy() for index_ridge in index_of_unclosed_ridges]
+                forbidden_facets_data = [forbidden_facets.copy() for index_ridge in index_of_unclosed_ridges]
+                k = 0
+                l = 0
+                going_forward = True
+                while k >= 0:
+                    # print(index_to_start)
+                    if going_forward:
+                        if k == len(index_of_unclosed_ridges):
+                            graph_method_3_rec(info_facets_data[k - 1].copy(), forbidden_facets_data[k - 1].copy(),
+                                               info_ridges_data[k - 1].copy(),
+                                               current_layer + 1, result)
+                            going_forward = False
+                            k -= 1
+                        else:
+                            if k == 0:
+                                info_ridges_data[k] = info_ridges.copy()
+                            else:
+                                info_ridges_data[k] = info_ridges_data[k - 1].copy()
+
+                            if info_ridges_data[k][index_of_unclosed_ridges[k]] == 1:
+                                if k == 0:
+                                    forbidden_facets_data[k] = forbidden_facets.copy()
+                                else:
+                                    forbidden_facets_data[k] = forbidden_facets_data[k - 1].copy()
+
+                                l = index_to_start[k]
+                                if l < len(facets_for_ridges_with_layer[current_layer][index_of_unclosed_ridges[k]]):
+                                    index_candidate_facet = \
+                                        facets_for_ridges_with_layer[current_layer][index_of_unclosed_ridges[k]][l]
+                                    if k == 0:
+                                        info_facets_data[k] = info_facets.copy()
+                                    else:
+                                        info_facets_data[k] = info_facets_data[k - 1].copy()
+                                    if not forbidden_facets_data[k][index_candidate_facet]:
+                                        info_facets_data[k][index_candidate_facet] = True
+                                        for index_newly_closed_ridge in ridges_of_facets[index_candidate_facet]:
+                                            info_ridges_data[k][index_newly_closed_ridge] += 1
+                                            if info_ridges_data[k][index_newly_closed_ridge] == 2:
+                                                for index_new_forbidden_facet in facets_for_ridges[
+                                                    index_newly_closed_ridge]:
+                                                    forbidden_facets_data[k][index_new_forbidden_facet] |= True
+                                    index_to_start[k] = l + 1
+                                    k += 1
+                                else:
+                                    going_forward = False
+
+                            else:
+                                info_ridges_data[k] = info_ridges_data[k - 1].copy()
+                                forbidden_facets_data[k] = forbidden_facets_data[k - 1].copy()
+                                info_facets_data[k] = info_facets_data[k - 1].copy()
+                                index_to_start[k] = l + 1
+                                k += 1
+                    else:
+                        while (k > 0 and (
+                                info_ridges_data[k - 1][index_of_unclosed_ridges[k]] == 2 or index_to_start[k] == len(
+                            facets_for_ridges_with_layer[current_layer][index_of_unclosed_ridges[k]]))) or (
+                                k == 0 and (info_ridges[index_of_unclosed_ridges[k]] == 2 or index_to_start[k] == len(
+                            facets_for_ridges_with_layer[current_layer][index_of_unclosed_ridges[k]]))):
+                            index_to_start[k] = 0
+
+                            k -= 1
+                        going_forward = True
+            else:
+                if max_layer == -1:
+                    results.append([facets[index] for index in range(len(info_facets)) if info_facets[index]])
+                    # K = sc.PureSimplicialComplex(
+                    #     [facets[index] for index in range(len(info_facets)) if info_facets[index]])
+                    # if K.Pic == 3 and K.is_promising() and K.is_Z2_homology_sphere():
+                    #     results.append(K)
+
+    if starting_state == None:
+        # here is some initialization
+        info_facets = [False for facet in facets]
+        forbidden_facets = [False for facet in facets]
+        info_facets[0] = True
+        forbidden_facets[0] = True
+        info_ridges = [0 for ridge in ridges]
+        for ridge_index in ridges_of_facets[0]:
+            info_ridges[ridge_index] += 1
+        result = []
+        graph_method_3_rec(info_facets, forbidden_facets, info_ridges, starting_layer, result)
+        return result
+    else:
+        info_facets, forbidden_facets, info_ridges = starting_state
+        result = []
+        graph_method_3_rec(info_facets, forbidden_facets, info_ridges, starting_layer, result)
+        return (result)
+
+
+def construct_complete_graph(n, m):
+    list_2_pow = [1]
+    for k in range(m + 1):
+        list_2_pow.append(list_2_pow[-1] * 2)
+    full_simplex = list_2_pow[m] - 1
+    facets = []
+    for facet_iter in combinations(range(1, m + 1), n):
+        facets.append(sc.face_to_binary(list(facet_iter), m))
+    ridges = []
+    for ridge_iter in combinations(range(1, m + 1), n - 1):
+        ridges.append(sc.face_to_binary(list(ridge_iter), m))
+    G = [(k, []) for k in range(len(facets))]
+    for i in range(len(G)):
+        for element1 in list_2_pow:
+            if element1 | facets[i] == facets[i]:
+                ridge = element1 ^ facets[i]
+                position_ridge = sc.dichotomie(ridges, ridge)
+                G[i][1].append((position_ridge, []))
+                other_vertices = full_simplex ^ facets[i]
+                for element2 in list_2_pow:
+                    if element2 | other_vertices == other_vertices:
+                        position_of_connected_facet = sc.dichotomie(facets, element2 | ridge)
+                        if position_of_connected_facet >= 0:
+                            G[i][1][-1][1].append(position_of_connected_facet)
+    print("Graph constructed")
+    return facets, ridges, G
+
+
+def find_layer_v2(facets,ridges, m, starting_facet_index):
+    list_2_pow = [1]
+    for k in range(m + 1):
+        list_2_pow.append(list_2_pow[-1] * 2)
+    facets_layer = [-1 for facet in facets]
+    current_layer = 0
+    facets_layer[starting_facet_index] = current_layer
+    current_layer += 1
+    while -1 in facets_layer:
+        for index_facet in range(len(facets)):
+            if facets_layer[index_facet] == current_layer - 1:
+                for index_neighbour in range(len(facets)):
+                    if facets_layer[index_neighbour] == -1:
+                        print(facets[index_neighbour] & facets[index_facet])
+                        if facets[index_neighbour] & facets[index_facet] in ridges:
+                            facets_layer[index_neighbour] = current_layer
+        current_layer+=1
+    return facets_layer

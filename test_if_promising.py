@@ -2,6 +2,11 @@ import SimplicialComplex as sc
 import json
 
 
+
+m = 9
+n = 5
+
+
 def read_file(filename):
     with open(filename, 'rb') as f:
         data = f.readlines()
@@ -10,14 +15,14 @@ def read_file(filename):
 
 
 def text(result):
-    name = 'result/PLS_9_5'
+    name = 'result/PLS_%d_%d_new0' % (m,n)
     t = open(name, mode='a', encoding='utf-8')
     for K in result:
         t.write(str(K) + '\n')
     t.close()
 
 
-results = read_file('result/PLS_9_5_temp')
+results = read_file('result/PLS_9_5_new')
 
 K_result = []
 l = 0
@@ -29,8 +34,9 @@ for K_bytes in results:
     K_bin = json.loads(K_bytes)
     K_sp = sc.PureSimplicialComplex(K_bin)
     if K_sp.is_promising():
-        if K_bin not in K_result:
-            K_result.append(K_bin)
+        if K_sp.is_minimal_lexico_order():
+            if K_bin not in K_result:
+                K_result.append(K_bin)
 
     # list_2_pow = [1]
     # for k in range(8):

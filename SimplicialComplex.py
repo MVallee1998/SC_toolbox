@@ -2,9 +2,11 @@ import numpy.polynomial as npp
 import binary_search_tree as bst
 from itertools import combinations, permutations
 import Betti_numbers as bnbr
+import numpy as np
 import sys
+import Z2_linear_algebra as Z2la
 
-sys.setrecursionlimit(5000)
+# sys.setrecursionlimit(1000)
 
 list_2_pow = [1]
 for k in range(16):
@@ -454,12 +456,12 @@ def Hyuntae_algo(pile, candidate_facets_ref, results, aimed_m):
     K = pile.pop()
     if not K.is_closed():
         for face in candidate_facets_ref:
-            if K.is_candidate(face, aimed_m):
-                new_K = PureSimplicialComplex(K.facets_bin + [face])
-                pile.append(new_K)
+            new_K = PureSimplicialComplex(K.facets_bin + [face])
+            pile.append(new_K)
         return Hyuntae_algo(pile, candidate_facets_ref, results, aimed_m)
     else:
         results.append(K)
+        print(K.facets_bin)
         return Hyuntae_algo(pile, candidate_facets_ref, results, aimed_m)
 
 
@@ -505,3 +507,101 @@ def Garrison_Scott(K):
             list_S[K.n - i] = list(range(1, list_2_pow[K.n]))
             i -= 1
     return list_char_funct
+
+
+def int_to_bin_array(x, k):
+    res = np.zeros(k)
+    for i in range(k):
+        if list_2_pow[i] | x == x:
+            res[i] = 1
+    return res
+
+def char_funct_array_to_bin(char_funct):
+    m, Pic = char_funct.shape
+    res = []
+    np_list_2_pow = np.array(list_2_pow[:Pic])
+    for v in char_funct:
+        res.append(np.sum(np_list_2_pow[v==1]))
+    return res
+
+
+def enumerate_char_funct_orbits(n, m):
+    list_char_funct_bin = []
+    list_char_funct = []
+    for combi_iter in combinations([3, 5, 6, 9, 10, 12, 7, 11, 13, 14, 15], n):
+        char_funct = list(combi_iter) + list_2_pow[:m - n]
+        list_char_funct_bin.append(char_funct)
+        current_char_funct = np.zeros((m, m - n))
+        for i in range(m):
+            current_char_funct[i] = int_to_bin_array(char_funct[i], m - n)
+        list_char_funct.append(current_char_funct.copy())
+    # GL4 = enumerate_GL4()
+    SL4 = enumerate_SL4()
+    eq_classes_repres = [list_char_funct_bin[0]]
+    eq_classes_ref = []
+    mini = sorted(list_char_funct_bin[0])
+    for A in SL4:
+        new_char_funct = list_char_funct[0].dot(A)
+        new_char_funct %=2
+        min_new_char_funct = sorted(char_funct_array_to_bin(new_char_funct))
+        if min_new_char_funct<mini:
+            mini = min_new_char_funct.copy()
+    eq_classes_ref.append(mini)
+    for i in range(1,len(list_char_funct)):
+        is_a_new_repres = True
+        mini = sorted(list_char_funct_bin[i])
+        for A in SL4:
+            new_char_funct = list_char_funct[i].dot(A)
+            new_char_funct %= 2
+            min_new_char_funct = sorted(char_funct_array_to_bin(new_char_funct))
+            # keeps_colours = True
+            # for element in list_2_pow[:m-n-3]:
+            #     if element not in min_new_char_funct:
+            #         keeps_colours = False
+            #         break
+            # if not keeps_colours:
+            #     break
+            if min_new_char_funct < mini:
+                mini = min_new_char_funct.copy()
+            if min_new_char_funct in eq_classes_ref:
+                is_a_new_repres = False
+                break
+        if is_a_new_repres:
+            eq_classes_repres.append(list_char_funct_bin[i])
+            eq_classes_ref.append(mini)
+    return(eq_classes_repres)
+
+
+
+def text(result):
+    name = '/GL4'
+    t = open(name, mode='a', encoding='utf-8')
+    for K in result:
+        t.write(str(K) + '\n')
+    t.close()
+
+
+def enumerate_GL4():
+    GL4 = []
+    for i0 in range(1,16):
+        for i1 in range(1,16):
+            for i2 in range(1,16):
+                for i3 in range(1,16):
+                    A_bin = Z2la.Z2Array(4,[i0,i1,i2,i3])
+                    if A_bin.is_invertible():
+                        A = np.zeros((4, 4))
+                        A[0] = int_to_bin_array(i0, 4)
+                        A[1] = int_to_bin_array(i1, 4)
+                        A[2] = int_to_bin_array(i2, 4)
+                        A[3] = int_to_bin_array(i3, 4)
+                        GL4.append(A.copy())
+    return(GL4)
+
+def enumerate_SL4():
+    SL4 = []
+    for vect in permutations([np.array([1,0,0,0]),np.array([0,1,0,0]),np.array([0,0,1,0]),np.array([0,0,0,1])]):
+        current_element = np.zeros((4,4))
+        for k in range(4):
+            current_element[k] = vect[k]
+        SL4.append(current_element.copy())
+    return SL4
