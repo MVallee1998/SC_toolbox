@@ -24,7 +24,8 @@ def f(data):
                               1, -1,
                               starting_point)
     stop = timeit.default_timer()
-    print(stop-start)
+    if stop-start> 50:
+        print(stop-start)
     return result
 
 
@@ -34,7 +35,7 @@ if __name__ == '__main__':
     sizes = []
     start = timeit.default_timer()
     list_char_funct = sc.enumerate_char_funct_orbits(n, m)
-    for char_funct in [[3, 5, 6, 9, 10, 12, 1, 2, 4, 8]]:
+    for char_funct in sorted(list_char_funct):
         part_result = []
         start_sub = timeit.default_timer()
         k += 1
