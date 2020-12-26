@@ -1,6 +1,6 @@
 import SimplicialComplex as sc
 import json
-
+import timeit
 
 
 m = 9
@@ -15,7 +15,7 @@ def read_file(filename):
 
 
 def text(result):
-    name = 'result/PLS_%d_%d_new0' % (m,n)
+    name = 'result/PLS_%d_%d_new1' % (m,n)
     t = open(name, mode='a', encoding='utf-8')
     for K in result:
         t.write(str(K) + '\n')
@@ -26,17 +26,22 @@ results = read_file('result/PLS_9_5_new')
 
 K_result = []
 l = 0
-
+start = timeit.default_timer()
 for K_bytes in results:
     l += 1
     if l % 50 == 0:
+        stop = timeit.default_timer()
+        print("time spent :", stop - start)
+        start = timeit.default_timer()
         print(l / len(results))
     K_bin = json.loads(K_bytes)
     K_sp = sc.PureSimplicialComplex(K_bin)
-    if K_sp.is_promising():
-        if K_sp.is_minimal_lexico_order():
-            if K_bin not in K_result:
-                K_result.append(K_bin)
+    if K_sp.Pic == 4 and K_sp.is_promising() and K_sp.is_Z2_homology_sphere():
+        K_sp_mini = K_sp.find_minimal_lexico_order()
+        if K_sp_mini < K_sp.facets_bin:
+            K_bin = K_sp_mini
+        if K_bin not in K_result:
+            K_result.append(K_bin)
 
     # list_2_pow = [1]
     # for k in range(8):

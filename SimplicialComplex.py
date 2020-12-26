@@ -20,12 +20,21 @@ def face_to_binary(face, m):
     return int(''.join(map(str, binary_face)), 2)
 
 
+def binary_to_face(x, m):
+    result = []
+    for k in range(m):
+        if list_2_pow[k] | x == x:
+            result.append(k + 1)
+    return result
+
+
 class PureSimplicialComplex:
     def __init__(self, facets=None, MNF_set=None, n=0):
         self.m = 0
         self.n = n
-        self.facets = facets
+        self.facets = facets.copy()
         self.MNF_set = MNF_set
+        self.facets_bin = []
         if facets:
             self.facets = facets
             if type(facets[0]) == list:
@@ -36,14 +45,11 @@ class PureSimplicialComplex:
                         if i not in labels:
                             labels.append(i)
                 self.m = len(labels)
-                self.list_2_pow = [1]
-                for k in range(16):
-                    self.list_2_pow.append(self.list_2_pow[-1] * 2)
                 self.facets_bin = [face_to_binary(facet, self.m) for facet in self.facets]
             else:
                 self.n = 0
                 self.m = 0
-                self.facets_bin = facets
+                self.facets_bin = facets.copy()
                 self.facets_bin.sort()
                 last_facet = self.facets_bin[-1]
                 two_pow = 1
@@ -59,9 +65,10 @@ class PureSimplicialComplex:
                             break
                     if label_used:
                         self.m += 1
-                self.list_2_pow = [1]
-                for k in range(16):
-                    self.list_2_pow.append(self.list_2_pow[-1] * 2)
+                self.facets = []
+                for facet_bin in self.facets_bin:
+                    self.facets.append(binary_to_face(facet_bin, self.m))
+                self.facets.sort()
         elif MNF_set:
             if not n:
                 raise Exception
@@ -87,7 +94,7 @@ class PureSimplicialComplex:
         self.closed_faces = None
 
     def create_FP(self):
-        if not self.FP_bin:
+        if self.facets_bin and not self.FP_bin:
             self.FP_bin = [[] for i in range(self.n)]
             faces_set = [bst.Node() for k in range(self.n)]
             facet_data = [(facet, []) for facet in self.facets_bin]
@@ -98,7 +105,7 @@ class PureSimplicialComplex:
                 self.FP_bin[k + 1] = faces.copy()
                 for l in range(len(faces)):  # treat every face of dimension k
                     face = faces[l][0]
-                    for element in self.list_2_pow[:self.m]:  # construct the (k-1)-subfaces
+                    for element in list_2_pow[:self.m]:  # construct the (k-1)-subfaces
                         if element | face == face:
                             subface = element ^ face
                             faces_set[k].insert((subface, [l]))
@@ -142,11 +149,11 @@ class PureSimplicialComplex:
         while k > self.n:
             subface_set = bst.Node()
             for face in temp_faces_list:  # treat every face of dimension k
-                for element in self.list_2_pow[:self.m]:  # construct the (k-1)-subfaces
+                for element in list_2_pow[:self.m]:  # construct the (k-1)-subfaces
                     if element | face == face:
                         subface = element ^ face
                         if not subface_set.findval(subface):
-                            if k > self.n or (k == self.n and (not dichotomie(self.FP_bin[k - 1], subface))):
+                            if k > self.n or (k == self.n and (not dichotomie(self.faces_set[k - 1], subface))):
                                 subface_set.insert((subface, []))
             temp_faces_list_data = []
             subface_set.TreeToList(temp_faces_list_data)
@@ -162,11 +169,11 @@ class PureSimplicialComplex:
             faces = [data[0] for data in faces_data]
             for l in range(len(faces)):  # treat every face of dimension k
                 face = faces[l]
-                for element in self.list_2_pow[:self.m]:  # construct the (k-1)-subfaces
+                for element in list_2_pow[:self.m]:  # construct the (k-1)-subfaces
                     if element | face == face:
                         subface = element ^ face
                         if (not (all_non_faces[k].findval(subface))) and (
-                                not dichotomie(self.FP_bin[k], subface)):  # needs to be fixed
+                                not dichotomie(self.FP_bin[k][:][0], subface)):  # needs to be fixed
                             all_non_faces[k].insert((subface, [l + 1]))
         MNF_set = bst.Node()
         # Here we will try every face of dimension k
@@ -176,10 +183,10 @@ class PureSimplicialComplex:
             faces_to_test = [data[0] for data in faces_to_test_data]
             for face_to_test in faces_to_test:
                 is_MNF = True
-                for element in self.list_2_pow[:self.m]:  # construct the (k-1)-subfaces
+                for element in list_2_pow[:self.m]:  # construct the (k-1)-subfaces
                     if element | face_to_test == face_to_test:
                         subface = element ^ face_to_test
-                        if not (dichotomie(subface, self.FP_bin[k - 1])):
+                        if not (dichotomie(self.FP_bin[k - 1][:][0], subface)):
                             is_MNF = False
                             break
                 if is_MNF:
@@ -193,7 +200,7 @@ class PureSimplicialComplex:
         candidate_facets_iter = combinations(M, self.n)
         candidate_facets = []
         for facet_iter in candidate_facets_iter:
-            candidate_facets.append(sum([self.list_2_pow[k] for k in facet_iter]))
+            candidate_facets.append(sum([list_2_pow[k] for k in facet_iter]))
         self.facets_bin = []
         for facet in candidate_facets:
             is_a_facet = True
@@ -207,7 +214,7 @@ class PureSimplicialComplex:
     def binary_to_face(self, face_bin):
         face = []
         for k in range(self.m):
-            if face_bin | self.list_2_pow[k] == face_bin:
+            if face_bin | list_2_pow[k] == face_bin:
                 face.append(k)
         return face
 
@@ -218,7 +225,7 @@ class PureSimplicialComplex:
             if Link_of_F.n < 2: return True
             for k in range(len(Link_of_F.facets_bin)):
                 facet = Link_of_F.facets_bin[k]
-                for element in Link_of_F.list_2_pow:
+                for element in list_2_pow:
                     if element | facet == facet:
                         ridges_set.insert((element ^ facet, [k]))
             closed = True
@@ -235,7 +242,7 @@ class PureSimplicialComplex:
                 if self.n < 2: return True
                 for k in range(len(self.facets_bin)):
                     facet = self.facets_bin[k]
-                    for element in self.list_2_pow:
+                    for element in list_2_pow:
                         if element | facet == facet:
                             ridges_set.insert((element ^ facet, [k]))
                 ridges_data_list = []
@@ -254,7 +261,7 @@ class PureSimplicialComplex:
             self.create_FP()
         if self.closed_faces == None:
             self.closed_faces = []
-            for k in range(self.n - 2):
+            for k in range(self.n - 1):
                 for face_data in self.FP_bin[k]:
                     if self.is_closed(face_data[0]):
                         self.closed_faces.append(face_data[0])
@@ -265,7 +272,7 @@ class PureSimplicialComplex:
             if self.n < 2: return []
             for k in range(len(self.facets_bin)):
                 facet = self.facets_bin[k]
-                for element in self.list_2_pow:
+                for element in list_2_pow:
                     if element | facet == facet:
                         ridges_set.insert((element ^ facet, [k + 1]))
             ridges_data_list = []
@@ -293,7 +300,7 @@ class PureSimplicialComplex:
             return False
         boundary_of_S = []
         self.list_closed_faces()
-        for element in self.list_2_pow:
+        for element in list_2_pow:
             if element | S == S:
                 boundary_of_S.append(element ^ S)
         boundary_of_S.sort()
@@ -312,12 +319,14 @@ class PureSimplicialComplex:
             if not self.FP_bin:
                 self.create_FP()
             FP = [[face_data[0] for face_data in self.FP_bin[k]] for k in range(self.n)]
+            if not self.facets_bin:
+                return []
             boundary_matrices = [[] for k in range(self.n)]
             boundary_matrices[0] = [[] for k in range(self.m)]
             for k in range(1, self.n):
                 for face in FP[k]:
                     boundary_matrices[k].append([])
-                    for element in self.list_2_pow:
+                    for element in list_2_pow:
                         if face | element == face:
                             boundary_matrices[k][-1].append(dichotomie(FP[k - 1], face ^ element))
                     boundary_matrices[k][-1].sort()
@@ -345,23 +354,20 @@ class PureSimplicialComplex:
     def is_minimal_lexico_order(self):
         closed_vertices = []
         for v in range(self.m):
-            link_of_v = Link_of(self, v)
-            if self.is_closed(self.list_2_pow[v]):
+            if self.is_closed(list_2_pow[v]):
                 closed_vertices.append(v)
-
-        ridges = []
         minimal_facets_bin = self.facets_bin.copy()
         for v in closed_vertices:
             ridges_containing_v = [ridge_data[0] for ridge_data in self.FP_bin[self.n - 2] if
-                                   ridge_data[0] | self.list_2_pow[v] == ridge_data]
+                                   ridge_data[0] | list_2_pow[v] == ridge_data[0]]
             for ridge in ridges_containing_v:
-                ridge_labels_to_modify = self.binary_to_face(ridge ^ self.list_2_pow[v])
+                ridge_labels_to_modify = self.binary_to_face(ridge ^ list_2_pow[v])
                 for ridge_labels_permu_iter in permutations(ridge_labels_to_modify):
                     F = []
                     for facet in self.facets_bin:
                         if facet | ridge == facet:
                             F += (self.binary_to_face(facet ^ ridge))
-                    remaining_labels = self.binary_to_face((self.list_2_pow[self.m] - 1) ^ ridge ^ F[0] ^ F[1])
+                    remaining_labels = self.binary_to_face((list_2_pow[self.m] - 1) ^ ridge ^ list_2_pow[F[0]] ^ list_2_pow[F[1]])
                     for F_perm_iter in permutations(F):
                         for remaining_labels_perm_iter in permutations(remaining_labels):
                             old_labels = [v]
@@ -373,6 +379,36 @@ class PureSimplicialComplex:
                                 return False
         return True
 
+    def find_minimal_lexico_order(self):
+        closed_vertices = []
+        for v in range(self.m):
+            if self.is_closed(list_2_pow[v]):
+                closed_vertices.append(v)
+        minimal_facets_bin = self.facets_bin.copy()
+        for v in closed_vertices:
+            ridges_containing_v = [ridge_data[0] for ridge_data in self.FP_bin[self.n - 2] if
+                                   ridge_data[0] | list_2_pow[v] == ridge_data[0]]
+            for ridge in ridges_containing_v:
+                ridge_labels_to_modify = self.binary_to_face(ridge ^ list_2_pow[v])
+                for ridge_labels_permu_iter in permutations(ridge_labels_to_modify):
+                    F = []
+                    for facet in self.facets_bin:
+                        if facet | ridge == facet:
+                            F += (self.binary_to_face(facet ^ ridge))
+                    remaining_labels = self.binary_to_face((list_2_pow[self.m] - 1) ^ ridge ^ list_2_pow[F[0]] ^ list_2_pow[F[1]])
+                    for F_perm_iter in permutations(F):
+                        for remaining_labels_perm_iter in permutations(remaining_labels):
+                            old_labels = [v]
+                            old_labels += list(ridge_labels_permu_iter)
+                            old_labels += list(F_perm_iter)
+                            old_labels += list(remaining_labels_perm_iter)
+                            relabeled_facets = relabel_facets(self, old_labels)
+                            if relabeled_facets < minimal_facets_bin:
+                                minimal_facets_bin = relabeled_facets.copy()
+        return minimal_facets_bin
+
+
+
 
 def relabel_facets(K, old_labels):
     if len(old_labels) != K.m:
@@ -380,7 +416,7 @@ def relabel_facets(K, old_labels):
     new_facets = [0] * len(K.facets_bin)
     for k in range(len(new_facets)):
         for l in range(K.m):
-            if K.facets_bin[k] ^ K.list_2_pow[old_labels[l]] == K.facets_bin[k]:
+            if K.facets_bin[k] ^ list_2_pow[old_labels[l]] == K.facets_bin[k]:
                 # the case when 01 or 10
                 new_facets[k] += K.list_2_pow[l]
     new_facets.sort()
@@ -392,8 +428,8 @@ def Link_of(K, F):
         K.create_FP()
     k = 0
     l = 0
-    while F % K.list_2_pow[l] != F:
-        if K.list_2_pow[l] | F == F:
+    while F % list_2_pow[l] != F:
+        if list_2_pow[l] | F == F:
             k += 1
         l += 1
     is_a_face = False
@@ -406,20 +442,20 @@ def Link_of(K, F):
     facets_of_Link = []
     complementary_faces = [facet_data[0] for facet_data in K.FP_bin[K.n - k - 1]]
     for complementary_face in complementary_faces:
-        if dichotomie(K.facets_bin, complementary_face ^ F) >= 0:
+        if (complementary_face | F) in K.facets_bin:
             facets_of_Link.append(complementary_face)
     unused_labels = []
     for i in range(K.m):
         unused = True
         for facet in facets_of_Link:
-            if K.list_2_pow[i] | facet == facet:
+            if list_2_pow[i] | facet == facet:
                 unused = False
                 break
         if unused:
             unused_labels.append(i)
     for i in range(len(unused_labels) - 1, -1, -1):
         for j in range(len(facets_of_Link)):
-            unshifted_bits = facets_of_Link[j] % K.list_2_pow[unused_labels[i]]
+            unshifted_bits = facets_of_Link[j] % list_2_pow[unused_labels[i]]
             facets_of_Link[j] = ((facets_of_Link[j] ^ unshifted_bits) >> 1) ^ unshifted_bits
     if len(unused_labels) == 0:
         return PureSimplicialComplex(facets_of_Link)
@@ -427,7 +463,7 @@ def Link_of(K, F):
     label_unused = True
     while m_of_link > 0 and label_unused:
         for facet in facets_of_Link:
-            if facet ^ K.list_2_pow[m_of_link - 1] == facet:
+            if facet ^ list_2_pow[m_of_link - 1] == facet:
                 label_unused = False
                 break
         m_of_link -= 1
@@ -474,7 +510,7 @@ def Garrison_Scott(K):
         list_2_pow.append(list_2_pow[-1] * 2)
     list_S = []
     for k in range(K.n, K.m):
-        list_S.append(list(range(1, K.list_2_pow[K.n])))
+        list_S.append(list(range(1, list_2_pow[K.n])))
     K_full_FP = []
     for k in range(K.n):
         for face in K.FP_bin[k]:
@@ -516,12 +552,13 @@ def int_to_bin_array(x, k):
             res[i] = 1
     return res
 
+
 def char_funct_array_to_bin(char_funct):
     m, Pic = char_funct.shape
     res = []
     np_list_2_pow = np.array(list_2_pow[:Pic])
     for v in char_funct:
-        res.append(np.sum(np_list_2_pow[v==1]))
+        res.append(np.sum(np_list_2_pow[v == 1]))
     return res
 
 
@@ -542,12 +579,12 @@ def enumerate_char_funct_orbits(n, m):
     mini = sorted(list_char_funct_bin[0])
     for A in SL4:
         new_char_funct = list_char_funct[0].dot(A)
-        new_char_funct %=2
+        new_char_funct %= 2
         min_new_char_funct = sorted(char_funct_array_to_bin(new_char_funct))
-        if min_new_char_funct<mini:
+        if min_new_char_funct < mini:
             mini = min_new_char_funct.copy()
     eq_classes_ref.append(mini)
-    for i in range(1,len(list_char_funct)):
+    for i in range(1, len(list_char_funct)):
         is_a_new_repres = True
         mini = sorted(list_char_funct_bin[i])
         for A in SL4:
@@ -569,8 +606,7 @@ def enumerate_char_funct_orbits(n, m):
         if is_a_new_repres:
             eq_classes_repres.append(list_char_funct_bin[i])
             eq_classes_ref.append(mini)
-    return(eq_classes_repres)
-
+    return (eq_classes_repres)
 
 
 def text(result):
@@ -583,11 +619,11 @@ def text(result):
 
 def enumerate_GL4():
     GL4 = []
-    for i0 in range(1,16):
-        for i1 in range(1,16):
-            for i2 in range(1,16):
-                for i3 in range(1,16):
-                    A_bin = Z2la.Z2Array(4,[i0,i1,i2,i3])
+    for i0 in range(1, 16):
+        for i1 in range(1, 16):
+            for i2 in range(1, 16):
+                for i3 in range(1, 16):
+                    A_bin = Z2la.Z2Array(4, [i0, i1, i2, i3])
                     if A_bin.is_invertible():
                         A = np.zeros((4, 4))
                         A[0] = int_to_bin_array(i0, 4)
@@ -595,13 +631,24 @@ def enumerate_GL4():
                         A[2] = int_to_bin_array(i2, 4)
                         A[3] = int_to_bin_array(i3, 4)
                         GL4.append(A.copy())
-    return(GL4)
+    return (GL4)
+
 
 def enumerate_SL4():
     SL4 = []
-    for vect in permutations([np.array([1,0,0,0]),np.array([0,1,0,0]),np.array([0,0,1,0]),np.array([0,0,0,1])]):
-        current_element = np.zeros((4,4))
+    for vect in permutations(
+            [np.array([1, 0, 0, 0]), np.array([0, 1, 0, 0]), np.array([0, 0, 1, 0]), np.array([0, 0, 0, 1])]):
+        current_element = np.zeros((4, 4))
         for k in range(4):
             current_element[k] = vect[k]
         SL4.append(current_element.copy())
     return SL4
+
+
+# K = [[1, 2, 3, 4, 5], [1, 2, 3, 4, 6], [1, 2, 3, 4, 7], [1, 2, 3, 4, 8], [1, 2, 3, 5, 7], [1, 2, 3, 6, 8], [1, 2, 4, 5, 7], [1, 2, 4, 6, 8], [1, 3, 4, 5, 9], [1, 3, 4, 6, 9], [1, 3, 4, 7, 9], [1, 3, 4, 8, 9], [1, 3, 5, 7, 8], [1, 3, 5, 8, 9], [1, 3, 6, 7, 8], [1, 3, 6, 7, 9], [1, 4, 5, 7, 9], [1, 4, 6, 8, 9], [1, 5, 6, 7, 8], [1, 5, 6, 7, 9], [1, 5, 6, 8, 9], [2, 3, 4, 5, 9], [2, 3, 4, 6, 9], [2, 3, 4, 7, 9], [2, 3, 4, 8, 9], [2, 3, 5, 7, 8], [2, 3, 5, 8, 9], [2, 3, 6, 7, 8], [2, 3, 6, 7, 9], [2, 4, 5, 7, 9], [2, 4, 6, 8, 9], [2, 5, 7, 8, 9], [2, 6, 7, 8, 9], [5, 6, 7, 8, 9]]#     K.append(binary_to_face(facet_bin,9))
+# K_sp = PureSimplicialComplex(K)
+#
+# # print(K)
+# print(K_sp.is_Z2_homology_sphere(),K_sp.is_promising(),K_sp.is_closed(),K_sp.is_minimal_lexico_order())
+#
+# print(Garrison_Scott(K_sp))

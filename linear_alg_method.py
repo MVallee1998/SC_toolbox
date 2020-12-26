@@ -1,5 +1,4 @@
 import numpy as np
-import cupy as cp
 from itertools import combinations, permutations
 import Z2_linear_algebra
 import SimplicialComplex as sc
@@ -40,6 +39,7 @@ def construct_matrix(char_function, n, m):
                 i = sc.dichotomie(ridges, ridge)
                 M[i, j] = 1
     return M, facets, ridges
+
 
 
 def create_new_cases_array(v):
