@@ -416,9 +416,9 @@ def relabel_facets(K, old_labels):
     new_facets = [0] * len(K.facets_bin)
     for k in range(len(new_facets)):
         for l in range(K.m):
-            if K.facets_bin[k] ^ list_2_pow[old_labels[l]] == K.facets_bin[k]:
+            if K.facets_bin[k] | list_2_pow[old_labels[l]] == K.facets_bin[k]:
                 # the case when 01 or 10
-                new_facets[k] += K.list_2_pow[l]
+                new_facets[k] += list_2_pow[l]
     new_facets.sort()
     return new_facets
 
@@ -645,10 +645,10 @@ def enumerate_SL4():
     return SL4
 
 
-# K = [[1, 2, 3, 4, 5], [1, 2, 3, 4, 6], [1, 2, 3, 4, 7], [1, 2, 3, 4, 8], [1, 2, 3, 5, 7], [1, 2, 3, 6, 8], [1, 2, 4, 5, 7], [1, 2, 4, 6, 8], [1, 3, 4, 5, 9], [1, 3, 4, 6, 9], [1, 3, 4, 7, 9], [1, 3, 4, 8, 9], [1, 3, 5, 7, 8], [1, 3, 5, 8, 9], [1, 3, 6, 7, 8], [1, 3, 6, 7, 9], [1, 4, 5, 7, 9], [1, 4, 6, 8, 9], [1, 5, 6, 7, 8], [1, 5, 6, 7, 9], [1, 5, 6, 8, 9], [2, 3, 4, 5, 9], [2, 3, 4, 6, 9], [2, 3, 4, 7, 9], [2, 3, 4, 8, 9], [2, 3, 5, 7, 8], [2, 3, 5, 8, 9], [2, 3, 6, 7, 8], [2, 3, 6, 7, 9], [2, 4, 5, 7, 9], [2, 4, 6, 8, 9], [2, 5, 7, 8, 9], [2, 6, 7, 8, 9], [5, 6, 7, 8, 9]]#     K.append(binary_to_face(facet_bin,9))
-# K_sp = PureSimplicialComplex(K)
-#
-# # print(K)
-# print(K_sp.is_Z2_homology_sphere(),K_sp.is_promising(),K_sp.is_closed(),K_sp.is_minimal_lexico_order())
-#
-# print(Garrison_Scott(K_sp))
+K = [31, 47, 55, 59, 93, 94, 109, 117, 174, 185, 186, 206, 217, 218, 233, 236, 310, 342, 369, 372, 422, 433, 434, 454, 465, 466, 481, 484]
+K_sp = PureSimplicialComplex(K)
+
+# print(K)
+print(K_sp.is_Z2_homology_sphere(),K_sp.is_promising(),K_sp.is_closed(),K_sp.is_minimal_lexico_order())
+
+print(Garrison_Scott(K_sp))
