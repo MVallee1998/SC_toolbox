@@ -645,10 +645,10 @@ def enumerate_SL4():
     return SL4
 
 
-K = [31, 47, 55, 59, 93, 94, 109, 117, 174, 185, 186, 206, 217, 218, 233, 236, 310, 342, 369, 372, 422, 433, 434, 454, 465, 466, 481, 484]
-K_sp = PureSimplicialComplex(K)
-
-# print(K)
-print(K_sp.is_Z2_homology_sphere(),K_sp.is_promising(),K_sp.is_closed(),K_sp.is_minimal_lexico_order())
-
-print(Garrison_Scott(K_sp))
+# K = [31, 47, 55, 59, 93, 94, 109, 117, 174, 185, 186, 206, 217, 218, 233, 236, 310, 342, 369, 372, 422, 433, 434, 454, 465, 466, 481, 484]
+# K_sp = PureSimplicialComplex(K)
+#
+# # print(K)
+# print(K_sp.is_Z2_homology_sphere(),K_sp.is_promising(),K_sp.is_closed(),K_sp.is_minimal_lexico_order())
+#
+# print(Garrison_Scott(K_sp))

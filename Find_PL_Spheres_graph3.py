@@ -17,9 +17,9 @@ def text(result):
 
 
 def f(data):
-    print("ninja")
     start = timeit.default_timer()
-    facets, ridges, facets_for_ridges, facets_for_ridges_with_layer, ridges_of_facets, starting_point = data
+    facets, ridges, facets_for_ridges, facets_for_ridges_with_layer, ridges_of_facets, starting_point, counter = data
+    print(counter)
     result = gm.graph_method3_with_rec(facets, ridges, facets_for_ridges, facets_for_ridges_with_layer, ridges_of_facets, n, m,
                               1, -1,
                               starting_point)
@@ -35,6 +35,8 @@ if __name__ == '__main__':
     sizes = []
     start = timeit.default_timer()
     list_char_funct = sc.enumerate_char_funct_orbits(n, m)
+    step1_good = []
+    counter = 0
     for char_funct in sorted(list_char_funct):
         part_result = []
         start_sub = timeit.default_timer()
@@ -53,24 +55,18 @@ if __name__ == '__main__':
 
         step1 = gm.graph_method3_with_rec(facets, ridges, facets_for_ridges, facets_for_ridges_with_layer, ridges_of_facets, n,
                                  m, 0, 1)
-        step1_good = []
+
         for starting_point in step1:
+            counter+=1
             step1_good.append(
-                (facets, ridges, facets_for_ridges, facets_for_ridges_with_layer, ridges_of_facets, starting_point))
-        print(len(step1_good))
-        with Pool(processes=18) as pool:  # start 4 worker processes
-            big_result = pool.map(f, step1_good)
-            for result in big_result:
-                for K in result:
-                    # K_sp = sc.PureSimplicialComplex(K)
-                    # if K_sp.Pic == 4 and K_sp.is_promising() and K_sp.is_Z2_homology_sphere():
-                    #     part_result.append(K_sp)
-                    if K not in final_result:
-                        final_result.append(K)
-            if len(part_result) not in sizes:
-                sizes.append(len(part_result))
-        stop_sub = timeit.default_timer()
-        print("Time spent: ", stop_sub - start_sub)
+                (facets.copy(), ridges.copy(), facets_for_ridges.copy(), facets_for_ridges_with_layer.copy(), ridges_of_facets.copy(), starting_point,counter))
+    print(len(step1_good))
+    with Pool(processes=19) as pool:  # start 19 worker processes
+        big_result = pool.map(f, step1_good)
+        for result in big_result:
+            for K in result:
+                if K not in final_result:
+                    final_result.append(K)
     stop = timeit.default_timer()
     print("Time spent: ", stop - start)
     text(final_result)
