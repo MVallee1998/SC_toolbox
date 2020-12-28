@@ -256,13 +256,13 @@ def graph_method3_with_rec(facets, ridges, facets_for_ridges, facets_for_ridges_
                                         current_forbidden_facets,
                                         current_info_ridges)
                     else:  # if the ridge hasn't been closed yet
-                        if facets_for_ridges_with_layer[current_layer][
+                        if facets_for_ridges[
                             index_of_unclosed_ridges[k]] != []:  # must be non empty
-                            if l + 1 < len(facets_for_ridges_with_layer[current_layer][index_of_unclosed_ridges[k]]):
+                            if l + 1 < len(facets_for_ridges[index_of_unclosed_ridges[k]]):
                                 enumerate_cases(index_of_unclosed_ridges, k, l + 1, current_info_facets,
                                                 current_forbidden_facets, current_info_ridges)
                             index_candidate_facet = \
-                                facets_for_ridges_with_layer[current_layer][index_of_unclosed_ridges[k]][l]
+                                facets_for_ridges[index_of_unclosed_ridges[k]][l]
                             if not forbidden_facets[index_candidate_facet]:  # if the facet is not forbidden
                                 new_current_info_facets = current_info_facets.copy()
                                 new_current_forbidden_facets = current_forbidden_facets.copy()
@@ -284,7 +284,7 @@ def graph_method3_with_rec(facets, ridges, facets_for_ridges, facets_for_ridges_
             index_of_unclosed_ridges = [index_ridge for index_ridge in range(len(info_ridges)) if
                                         info_ridges[index_ridge] == 1]
             if index_of_unclosed_ridges != []:
-                if current_layer<=len(facets_for_ridges_with_layer):
+                if current_layer<=m-n:
                     enumerate_cases(index_of_unclosed_ridges, 0, 0, info_facets.copy(), forbidden_facets.copy(),
                             info_ridges.copy())
             else:

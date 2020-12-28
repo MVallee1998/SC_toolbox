@@ -5,6 +5,7 @@ import Betti_numbers as bnbr
 import numpy as np
 import sys
 import Z2_linear_algebra as Z2la
+import json
 
 # sys.setrecursionlimit(1000)
 
@@ -379,7 +380,7 @@ class PureSimplicialComplex:
                                 return False
         return True
 
-    def find_minimal_lexico_order(self):
+    def find_minimal_lexico_order(self,dictionary):
         closed_vertices = []
         for v in range(self.m):
             if self.is_closed(list_2_pow[v]):
@@ -403,6 +404,8 @@ class PureSimplicialComplex:
                             old_labels += list(F_perm_iter)
                             old_labels += list(remaining_labels_perm_iter)
                             relabeled_facets = relabel_facets(self, old_labels)
+                            if json.dumps(relabeled_facets) in dictionary:
+                                dictionary[json.dumps(relabeled_facets)] = True
                             if relabeled_facets < minimal_facets_bin:
                                 minimal_facets_bin = relabeled_facets.copy()
         return minimal_facets_bin
@@ -608,6 +611,12 @@ def enumerate_char_funct_orbits(n, m):
             eq_classes_ref.append(mini)
     return (eq_classes_repres)
 
+def enumerate_all_lambdas(n,m):
+    list_char_funct = []
+    for combi_iter in combinations([3, 5, 6, 9, 10, 12, 7, 11, 13, 14, 15], n):
+        char_funct = list(combi_iter) + list_2_pow[:m - n]
+        list_char_funct.append(char_funct)
+    return list_char_funct
 
 def text(result):
     name = '/GL4'
@@ -644,11 +653,23 @@ def enumerate_SL4():
         SL4.append(current_element.copy())
     return SL4
 
+def display_char_funct(char_funct,n):
+    char_funct_array = np.zeros((n,len(char_funct)))
+    for k in range(len(char_funct)):
+        char_funct_array[:,k] = int_to_bin_array(char_funct[k],n)
+    print(char_funct_array)
 
-K = [31, 47, 55, 59, 93, 94, 109, 117, 174, 185, 186, 206, 217, 218, 233, 236, 310, 342, 369, 372, 422, 433, 434, 454, 465, 466, 481, 484]
+K_bin = [7, 11, 13, 22, 26, 44, 84, 88, 100, 104]
+K = []
+for facet_bin in K_bin:
+    K.append(binary_to_face(facet_bin,9))
+
+# K = [[1, 2, 3], [1, 2, 4], [1, 3, 4], [2, 3, 5], [2, 4, 5], [3, 4, 6], [3, 5, 7], [3, 6, 7], [4, 5, 7], [4, 6, 7]]
 K_sp = PureSimplicialComplex(K)
 
-# print(K)
-print(K_sp.is_Z2_homology_sphere(),K_sp.is_promising(),K_sp.is_closed(),K_sp.is_minimal_lexico_order())
-
-print(Garrison_Scott(K_sp))
+print(K)
+print(K_sp.is_Z2_homology_sphere(),K_sp.is_promising(),K_sp.is_closed(),K_sp.find_minimal_lexico_order(dict()))
+#
+list_char_funct = Garrison_Scott(K_sp)
+# for char_funct in list_char_funct:
+#     display_char_funct(char_funct,3)
