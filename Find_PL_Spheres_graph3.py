@@ -4,8 +4,8 @@ from multiprocessing import Pool
 from itertools import combinations, permutations
 import timeit
 
-n = 6
-m = 10
+n = 4
+m = 8
 tests = []
 
 def text(result):
@@ -18,8 +18,7 @@ def text(result):
 
 def f(data):
     start = timeit.default_timer()
-    facets, ridges, facets_for_ridges, facets_for_ridges_with_layer, ridges_of_facets, starting_point, counter = data
-    print(counter)
+    facets, ridges, facets_for_ridges, facets_for_ridges_with_layer, ridges_of_facets, starting_point, counter= data
     result = gm.graph_method3_with_rec(facets, ridges, facets_for_ridges, facets_for_ridges_with_layer, ridges_of_facets, n, m,
                               1, -1,
                               starting_point)
@@ -61,16 +60,15 @@ if __name__ == '__main__':
             step1_good.append(
                 (facets.copy(), ridges.copy(), facets_for_ridges.copy(), facets_for_ridges_with_layer.copy(), ridges_of_facets.copy(), starting_point,counter))
     print(len(step1_good))
-    with Pool(processes=19) as pool:  # start 19 worker processes
-        big_result = pool.map(f, step1_good)
+    with Pool(processes=6) as pool:  # start 19 worker processes
+        big_result = pool.imap(f, step1_good)
         for result in big_result:
             for K in result:
                 if K not in final_result:
                     final_result.append(K)
     stop = timeit.default_timer()
     print("Time spent: ", stop - start)
-    text(final_result)
-    print(sizes)
+    # text(final_result)
 #
 #
 # def f(starting_point):

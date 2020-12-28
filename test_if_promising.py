@@ -27,6 +27,7 @@ results = read_file('result/PLS_8_4_temp')
 K_result = []
 l = 0
 start = timeit.default_timer()
+counter = 0
 for K_bytes in results:
     l += 1
     if l % 50 == 0:
@@ -38,10 +39,12 @@ for K_bytes in results:
     K_sp = sc.PureSimplicialComplex(K_bin)
     if K_sp.Pic == 4 and K_sp.is_promising() and K_sp.is_Z2_homology_sphere():
         K_sp_mini = K_sp.find_minimal_lexico_order()
-        if K_sp_mini < K_sp.facets_bin:
+        if K_sp_mini <= K_sp.facets_bin:
             K_bin = K_sp_mini
-        if K_bin not in K_result:
-            K_result.append(K_bin)
+            if K_bin not in K_result:
+                print(K_bin, counter)
+                counter+=1
+                K_result.append(K_bin)
 
     # list_2_pow = [1]
     # for k in range(8):
