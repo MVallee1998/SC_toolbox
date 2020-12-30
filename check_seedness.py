@@ -16,14 +16,14 @@ def read_file(filename):
 
 
 def text(result):
-    name = 'result/PLS_%d_%d_first_orbit' % (m, n)
+    name = 'result/PLS_%d_%d_good_seeds_lin_alg' % (m, n)
     t = open(name, mode='a', encoding='utf-8')
     for K in result:
         t.write(str(K) + '\n')
     t.close()
 
 
-results = read_file('result/PLS_%d_%d_temp_first_orbit' % (m, n))
+results = read_file('result/PLS_%d_%d_lin_alg' % (m, n))
 l=0
 counter = 0
 start = timeit.default_timer()
@@ -35,9 +35,9 @@ for K_bytes in results:
         print("time spent :", stop - start)
         start = timeit.default_timer()
         print(l / len(results))
-    K_bin = json.loads(K_bytes)
-    K_sp = sc.PureSimplicialComplex(K_bin)
-    if K_sp.is_a_seed() and K_bin not in list_seeds:
-        list_seeds.append(K_bin)
+    K = json.loads(K_bytes)
+    K_sp = sc.PureSimplicialComplex(K)
+    if K_sp.is_a_seed() and K not in list_seeds:
+        list_seeds.append(K)
 
 text(list_seeds)

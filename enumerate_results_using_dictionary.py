@@ -3,8 +3,8 @@ import json
 import timeit
 import collections
 
-m = 9
-n = 5
+m = 8
+n = 4
 
 
 def read_file(filename):
@@ -15,14 +15,14 @@ def read_file(filename):
 
 
 def text(result):
-    name = 'result/PLS_%d_%d_lin_alg_test2' % (m, n)
+    name = 'result/PLS_%d_%d_good_seeds_lin_alg_final' % (m, n)
     t = open(name, mode='a', encoding='utf-8')
     for K in result:
         t.write(str(K) + '\n')
     t.close()
 
 
-results = read_file('result/PLS_%d_%d_lin_alg_seeds' % (m, n))
+results = read_file('result/PLS_%d_%d_good_seeds_lin_alg' % (m, n))
 
 dictionary = dict()
 for K_bin in results:

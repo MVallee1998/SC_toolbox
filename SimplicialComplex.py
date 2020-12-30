@@ -175,6 +175,7 @@ class PureSimplicialComplex:
         self.MNF_set_bin = []
         # Here we will try every face of dimension k
         for k in range(1, self.n + 1):
+            # print([binary_to_face(non_face,self.m) for non_face in all_non_faces[k]])
             for non_face_to_test in all_non_faces[k]:
                 is_MNF = True
                 for element in list_2_pow[:self.m]:  # construct the (k-1)-subfaces
@@ -412,15 +413,11 @@ class PureSimplicialComplex:
         list_all_edges = [face_to_binary(list(facet_iter), self.m) for facet_iter in
                           combinations(range(1, self.m + 1), 2)]
         for edge_bin in list_all_edges:
-            is_pair = False
-            pair_broken = False
+            is_pair = True
             for MNF_bin in self.MNF_set_bin:
-                if MNF_bin & edge_bin == MNF_bin or MNF_bin ^ edge_bin == MNF_bin: #00 or 11 at the positions of the vertices of the edge
-                    is_pair = True
-                else:
-                    pair_broken = True
-                    if is_pair: break
-            if is_pair and pair_broken:
+                if MNF_bin & edge_bin in list_2_pow: #10 or 01 at the positions of the vertices of the edge
+                    is_pair = False
+            if is_pair and edge_bin not in self.MNF_set_bin:
                 return False
         return True
 
@@ -531,7 +528,7 @@ def Garrison_Scott(K):
     K_full_FP = []
     for k in range(K.n):
         for face in K.FP_bin[k]:
-            K_full_FP.append(face[0])
+            K_full_FP.append(face)
     current_lambda = []
     i = K.n
     for k in range(K.n):
@@ -674,7 +671,8 @@ def display_char_funct(char_funct, n):
     char_funct_array = np.zeros((n, len(char_funct)))
     for k in range(len(char_funct)):
         char_funct_array[:, k] = int_to_bin_array(char_funct[k], n)
-    print(char_funct_array)
+    print(char_funct_array[:,n:])
+
 
 #
 # # print(K)
