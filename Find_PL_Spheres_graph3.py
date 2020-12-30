@@ -4,12 +4,12 @@ from multiprocessing import Pool
 from itertools import combinations, permutations
 import timeit
 
-n = 4
-m = 8
+n = 5
+m = 9
 tests = []
 
 def text(result):
-    name = 'result/PLS_%d_%d_temp' % (m, n)
+    name = 'result/PLS_%d_%d_temp_first_orbit' % (m, n)
     t = open(name, mode='a', encoding='utf-8')
     for K in result:
         t.write(str(K) + '\n')
@@ -33,7 +33,7 @@ if __name__ == '__main__':
     final_result = []
     sizes = []
     start = timeit.default_timer()
-    list_char_funct = sc.enumerate_char_funct_orbits(n, m)
+    list_char_funct = [sc.enumerate_char_funct_orbits(n, m)[0]]
     step1_good = []
     counter = 0
     for char_funct in sorted(list_char_funct):

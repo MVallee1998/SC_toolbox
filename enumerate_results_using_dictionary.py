@@ -22,7 +22,7 @@ def text(result):
     t.close()
 
 
-results = read_file('result/PLS_%d_%d_lin_alg' % (m, n))
+results = read_file('result/PLS_%d_%d_lin_alg_seeds' % (m, n))
 
 dictionary = dict()
 for K_bin in results:
@@ -34,7 +34,7 @@ PL_Spheres = []
 start =  timeit.default_timer()
 for K_str in dictionary:
     l+=1
-    if l % 50 == 0:
+    if l % 100 == 0:
         stop = timeit.default_timer()
         print("time spent :", stop - start)
         start = timeit.default_timer()
