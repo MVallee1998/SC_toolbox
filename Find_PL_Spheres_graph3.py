@@ -68,7 +68,7 @@ if __name__ == '__main__':
                     final_result.append(K)
     stop = timeit.default_timer()
     print("Time spent: ", stop - start)
-    # text(final_result)
+    text(final_result)
 #
 #
 # def f(starting_point):

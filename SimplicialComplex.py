@@ -93,6 +93,7 @@ class PureSimplicialComplex:
         self.H = None
         self.unclosed_ridges = None
         self.closed_faces = None
+        self.list_faces = None
 
     def create_FP(self):
         if self.facets_bin and not self.FP_bin:
@@ -113,6 +114,12 @@ class PureSimplicialComplex:
             vertices = []
             faces_set[0].TreeToList(vertices)
             self.FP_bin[0] = vertices.copy()
+            self.list_faces = []
+            for k in range(self.n):
+                self.list_faces.append([])
+                for face_data in self.FP_bin[k]:
+                    self.list_faces[-1].append(face_data[0])
+
 
     def create_f_vector(self):
         if not self.FP_bin:
@@ -154,12 +161,11 @@ class PureSimplicialComplex:
                     if element | face == face:
                         subface = element ^ face
                         if not subface_set.findval(subface):
-                            if k > self.n or (k == self.n and (not dichotomie(self.faces_set[k - 1], subface))):
+                            if k > self.n or (k == self.n and (not dichotomie(self.list_faces[k-1], subface))):
                                 subface_set.insert((subface, []))
             temp_faces_list_data = []
             subface_set.TreeToList(temp_faces_list_data)
             temp_faces_list = [data[0] for data in temp_faces_list_data]
-
             k = k - 1
         # we then create the set with all subsets of [m] of size <= n not in  the given faces set
         all_non_faces = [bst.Node() for k in range(self.n + 1)]
@@ -174,7 +180,7 @@ class PureSimplicialComplex:
                     if element | face == face:
                         subface = element ^ face
                         if (not (all_non_faces[k].findval(subface))) and (
-                                not dichotomie(self.FP_bin[k][:][0], subface)):  # needs to be fixed
+                                not dichotomie(self.list_faces[k], subface)):  # needs to be fixed
                             all_non_faces[k].insert((subface, [l + 1]))
         MNF_set = bst.Node()
         # Here we will try every face of dimension k
@@ -187,14 +193,14 @@ class PureSimplicialComplex:
                 for element in list_2_pow[:self.m]:  # construct the (k-1)-subfaces
                     if element | face_to_test == face_to_test:
                         subface = element ^ face_to_test
-                        if not (dichotomie(self.FP_bin[k - 1][:][0], subface)):
+                        if not (dichotomie(self.list_faces[k-1], subface)):
                             is_MNF = False
                             break
                 if is_MNF:
-                    MNF_set.insert((face_to_test, [1]))
+                    MNF_set.insert((face_to_test, [0]))
         self.MNF_set_bin = []
         MNF_set.TreeToList(self.MNF_set_bin)
-        self.MNF_set_bin = self.MNF_set_bin[:][0]
+        self.MNF_set_bin = [MNF_data[0] for MNF_data in self.MNF_set_bin]
 
     def compute_facets_from_MNF_set(self):  # TO CHANGE
         M = range(1, self.m + 1)
@@ -380,7 +386,7 @@ class PureSimplicialComplex:
                                 return False
         return True
 
-    def find_minimal_lexico_order(self,dictionary):
+    def find_minimal_lexico_order(self,dictionary=None):
         closed_vertices = []
         for v in range(self.m):
             if self.is_closed(list_2_pow[v]):
@@ -404,7 +410,7 @@ class PureSimplicialComplex:
                             old_labels += list(F_perm_iter)
                             old_labels += list(remaining_labels_perm_iter)
                             relabeled_facets = relabel_facets(self, old_labels)
-                            if json.dumps(relabeled_facets) in dictionary:
+                            if dictionary and json.dumps(relabeled_facets) in dictionary:
                                 dictionary[json.dumps(relabeled_facets)] = True
                             if relabeled_facets < minimal_facets_bin:
                                 minimal_facets_bin = relabeled_facets.copy()
