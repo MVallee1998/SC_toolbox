@@ -3,12 +3,16 @@ import SimplicialComplex
 import json
 import datetime
 
-
+def read_file(filename):
+    with open(filename, 'rb') as f:
+        data = f.readlines()
+    data = [x.strip() for x in data]
+    return data
 # setting up the connection with database
 conn = sqlite3.connect("Real_Toric_Spaces.db")
 print("Successfully connected to the database")
 cursor = conn.cursor()
-facets_list = SimplicialComplex.read_file('./PLS_10_6')
+facets_list = read_file('.Result_Hyuntae/PLS_10_6')
 # storing values in a variable
 values = []
 k = 0

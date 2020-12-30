@@ -5,7 +5,6 @@ import SimplicialComplex as sc
 import timeit
 from scipy.sparse import csr_matrix
 
-
 def construct_matrix(char_function, n, m):
     Pic = m - n
     cofacets = []
@@ -98,7 +97,6 @@ def linear_alg_method(M_sparse, M):
     results = []
     linear_alg_method_rec(original_array_of_v, results)
     print(len(results))
-
 
 def find_kernel(M):
     nbr_ridges, nbr_facets = M.shape

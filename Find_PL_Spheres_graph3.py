@@ -4,12 +4,12 @@ from multiprocessing import Pool
 from itertools import combinations, permutations
 import timeit
 
-n = 6
-m = 10
+n = 5
+m = 9
 tests = []
 
 def text(result):
-    name = 'result/PLS_%d_%d_temp' % (m, n)
+    name = 'result/PLS_%d_%d_temp_first_orbit' % (m, n)
     t = open(name, mode='a', encoding='utf-8')
     for K in result:
         t.write(str(K) + '\n')
@@ -18,8 +18,7 @@ def text(result):
 
 def f(data):
     start = timeit.default_timer()
-    facets, ridges, facets_for_ridges, facets_for_ridges_with_layer, ridges_of_facets, starting_point, counter = data
-    print(counter)
+    facets, ridges, facets_for_ridges, facets_for_ridges_with_layer, ridges_of_facets, starting_point, counter= data
     result = gm.graph_method3_with_rec(facets, ridges, facets_for_ridges, facets_for_ridges_with_layer, ridges_of_facets, n, m,
                               1, -1,
                               starting_point)
@@ -34,7 +33,7 @@ if __name__ == '__main__':
     final_result = []
     sizes = []
     start = timeit.default_timer()
-    list_char_funct = sc.enumerate_char_funct_orbits(n, m)
+    list_char_funct = [sc.enumerate_char_funct_orbits(n, m)[0]]
     step1_good = []
     counter = 0
     for char_funct in sorted(list_char_funct):
@@ -61,8 +60,8 @@ if __name__ == '__main__':
             step1_good.append(
                 (facets.copy(), ridges.copy(), facets_for_ridges.copy(), facets_for_ridges_with_layer.copy(), ridges_of_facets.copy(), starting_point,counter))
     print(len(step1_good))
-    with Pool(processes=19) as pool:  # start 19 worker processes
-        big_result = pool.map(f, step1_good)
+    with Pool(processes=6) as pool:  # start 19 worker processes
+        big_result = pool.imap(f, step1_good)
         for result in big_result:
             for K in result:
                 if K not in final_result:
@@ -70,7 +69,6 @@ if __name__ == '__main__':
     stop = timeit.default_timer()
     print("Time spent: ", stop - start)
     text(final_result)
-    print(sizes)
 #
 #
 # def f(starting_point):
