@@ -3,6 +3,7 @@ import Z2_linear_algebra
 import numpy as np
 import SimplicialComplex as sc
 
+G_vector = [2,6,10,20,30,50,70,105,140,196,252]
 
 def enumerate_facets_and_ridges(char_function, n, m):
     Pic = m - n
@@ -234,9 +235,9 @@ def initialize_graph_method3(facets, ridges, G, facet_layer, n, m):
 def graph_method3_with_rec(facets, ridges, facets_for_ridges, facets_for_ridges_with_layer, ridges_of_facets, n, m,
                            starting_layer, max_layer,
                            starting_state=None):
-    def graph_method_3_rec(info_facets, forbidden_facets, info_ridges, current_layer, results):
+    def graph_method_3_rec(info_facets, forbidden_facets, info_ridges, current_layer, results, nbr_facets):
         if current_layer == max_layer:
-            results.append((info_facets, forbidden_facets, info_ridges))
+            results.append((info_facets, forbidden_facets, info_ridges, nbr_facets))
         # elif current_layer > m - n:
         #     if 1 not in info_ridges:
         #         results.append([facets[index] for index in range(len(info_facets)) if info_facets[index]])
@@ -246,24 +247,24 @@ def graph_method3_with_rec(facets, ridges, facets_for_ridges, facets_for_ridges_
         #     # print([1*facet for facet in info_facets])
         else:
             def enumerate_cases(index_of_unclosed_ridges, k, l, current_info_facets, current_forbidden_facets,
-                                current_info_ridges):
+                                current_info_ridges, nbr_facets):
                 if k == len(index_of_unclosed_ridges):
                     graph_method_3_rec(current_info_facets, current_forbidden_facets, current_info_ridges,
-                                       current_layer + 1, result)
+                                       current_layer + 1, result, nbr_facets)
                 else:
                     if current_info_ridges[index_of_unclosed_ridges[k]] == 2:
                         enumerate_cases(index_of_unclosed_ridges, k + 1, 0, current_info_facets,
                                         current_forbidden_facets,
-                                        current_info_ridges)
+                                        current_info_ridges, nbr_facets)
                     else:  # if the ridge hasn't been closed yet
                         if facets_for_ridges[
                             index_of_unclosed_ridges[k]] != []:  # must be non empty
                             if l + 1 < len(facets_for_ridges[index_of_unclosed_ridges[k]]):
                                 enumerate_cases(index_of_unclosed_ridges, k, l + 1, current_info_facets,
-                                                current_forbidden_facets, current_info_ridges)
+                                                current_forbidden_facets, current_info_ridges, nbr_facets)
                             index_candidate_facet = \
                                 facets_for_ridges[index_of_unclosed_ridges[k]][l]
-                            if not forbidden_facets[index_candidate_facet]:  # if the facet is not forbidden
+                            if nbr_facets<=G_vector[n-1] and not forbidden_facets[index_candidate_facet]:  # if the facet is not forbidden
                                 new_current_info_facets = current_info_facets.copy()
                                 new_current_forbidden_facets = current_forbidden_facets.copy()
                                 new_current_info_ridges = current_info_ridges.copy()
@@ -279,14 +280,14 @@ def graph_method3_with_rec(facets, ridges, facets_for_ridges, facets_for_ridges_
                                 #     new_current_forbidden_facets[
                                 #         facets_for_ridges[int(index_newly_closed_ridge)]] = True  # changer
                                 enumerate_cases(index_of_unclosed_ridges, k + 1, 0, new_current_info_facets,
-                                                new_current_forbidden_facets, new_current_info_ridges)
+                                                new_current_forbidden_facets, new_current_info_ridges, nbr_facets+1)
 
             index_of_unclosed_ridges = [index_ridge for index_ridge in range(len(info_ridges)) if
                                         info_ridges[index_ridge] == 1]
             if index_of_unclosed_ridges != []:
-                if current_layer<=m-n:
+                if current_layer<=m-n and nbr_facets<=G_vector[n-1]:
                     enumerate_cases(index_of_unclosed_ridges, 0, 0, info_facets.copy(), forbidden_facets.copy(),
-                            info_ridges.copy())
+                            info_ridges.copy(), nbr_facets)
             else:
                 if max_layer == -1:
                     result.append([facets[index] for index in range(len(info_facets)) if info_facets[index]])
@@ -302,12 +303,12 @@ def graph_method3_with_rec(facets, ridges, facets_for_ridges, facets_for_ridges_
         for ridge_index in ridges_of_facets[0]:
             info_ridges[ridge_index] += 1
         result = []
-        graph_method_3_rec(info_facets, forbidden_facets, info_ridges, starting_layer, result)
+        graph_method_3_rec(info_facets, forbidden_facets, info_ridges, starting_layer, result,1)
         return result
     else:
-        info_facets, forbidden_facets, info_ridges = starting_state
+        info_facets, forbidden_facets, info_ridges, nbr_facets = starting_state
         result = []
-        graph_method_3_rec(info_facets, forbidden_facets, info_ridges, starting_layer, result)
+        graph_method_3_rec(info_facets, forbidden_facets, info_ridges, starting_layer, result,nbr_facets)
         return (result)
 
 

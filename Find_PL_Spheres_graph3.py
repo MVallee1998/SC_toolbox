@@ -4,12 +4,12 @@ from multiprocessing import Pool
 from itertools import combinations, permutations
 import timeit
 
-n = 5
-m = 9
+n = 6
+m = 10
 tests = []
 
 def text(result):
-    name = 'result/PLS_%d_%d_temp_first_orbit' % (m, n)
+    name = 'result/PLS_%d_%d_temp' % (m, n)
     t = open(name, mode='a', encoding='utf-8')
     for K in result:
         t.write(str(K) + '\n')
@@ -19,9 +19,11 @@ def text(result):
 def f(data):
     start = timeit.default_timer()
     facets, ridges, facets_for_ridges, facets_for_ridges_with_layer, ridges_of_facets, starting_point, counter= data
+    print(counter)
     result = gm.graph_method3_with_rec(facets, ridges, facets_for_ridges, facets_for_ridges_with_layer, ridges_of_facets, n, m,
                               1, -1,
                               starting_point)
+
     stop = timeit.default_timer()
     if stop-start> 50:
         print(stop-start)
@@ -33,7 +35,7 @@ if __name__ == '__main__':
     final_result = []
     sizes = []
     start = timeit.default_timer()
-    list_char_funct = [sc.enumerate_char_funct_orbits(n, m)[0]]
+    list_char_funct = sc.enumerate_char_funct_orbits(n, m)
     step1_good = []
     counter = 0
     for char_funct in sorted(list_char_funct):
@@ -60,7 +62,7 @@ if __name__ == '__main__':
             step1_good.append(
                 (facets.copy(), ridges.copy(), facets_for_ridges.copy(), facets_for_ridges_with_layer.copy(), ridges_of_facets.copy(), starting_point,counter))
     print(len(step1_good))
-    with Pool(processes=6) as pool:  # start 19 worker processes
+    with Pool(processes=18) as pool:  # start 19 worker processes
         big_result = pool.imap(f, step1_good)
         for result in big_result:
             for K in result:
