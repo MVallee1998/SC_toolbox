@@ -10,6 +10,7 @@ import collections as coll
 
 # sys.setrecursionlimit(1000)
 
+G_vector = [2,6,10,20,30,50,70,105,140,196,252]
 list_2_pow = [1]
 for k in range(16):
     list_2_pow.append(list_2_pow[-1] * 2)
@@ -224,12 +225,10 @@ class PureSimplicialComplex:
                             ridges_set[subface] = [facet]
                         else:
                             ridges_set[subface].append(facet)
-            closed = True
             for ridge_parents in ridges_set.values():
                 if len(ridge_parents) != 2:
-                    closed = False
-                    break
-            return closed
+                    return False
+            return True
         else:
             if not self.FP_bin:
                 ridges_set = dict()
@@ -244,22 +243,21 @@ class PureSimplicialComplex:
                                 ridges_set[subface].append(facet)
             else:
                 ridges_set = self.FP_bin[self.n - 2]
-            closed = True
             for ridge_parents in ridges_set.values():
                 if len(ridge_parents) != 2:
-                    closed = False
-                    break
-            return closed
+                    return False
+            return True
 
     def list_closed_faces(self):
         if not self.FP_bin:
             self.create_FP()
         if self.closed_faces == None:
             self.closed_faces = []
-            for k in range(self.n - 1):
+            for k in range(self.n-2):
                 for face in self.FP_bin[k]:
                     if self.is_closed(face):
                         self.closed_faces.append(face)
+            self.closed_faces.sort()
 
     def list_unclosed_ridges(self):
         if not self.unclosed_ridges:
@@ -274,7 +272,7 @@ class PureSimplicialComplex:
                         else:
                             ridges_set[subface].append(facet)
             unclosed_ridges = []
-            for ridge_data in ridges_set.values():
+            for ridge_data in ridges_set.items():
                 if len(ridge_data[1]) != 2:
                     unclosed_ridges.append(ridge_data[0])
             unclosed_ridges.sort()
@@ -302,8 +300,9 @@ class PureSimplicialComplex:
         boundary_of_S.sort()
         self.list_unclosed_ridges()
         unclosed_ridges = self.unclosed_ridges
+        unclosed_ridges.sort()
         for ridge in boundary_of_S:
-            if dichotomie(unclosed_ridges, ridge) >= 0:
+            if ridge in unclosed_ridges:
                 for closed_face in self.closed_faces:
                     if S | closed_face == S:
                         return False
@@ -501,18 +500,23 @@ def dichotomie(t, v):
 
 
 def Hyuntae_algo(pile, candidate_facets_ref, results, aimed_m):
-    if pile == []:
-        return results
-    K = pile.pop()
-    if not K.is_closed():
-        for face in candidate_facets_ref:
-            new_K = PureSimplicialComplex(K.facets_bin + [face])
-            pile.append(new_K)
-        return Hyuntae_algo(pile, candidate_facets_ref, results, aimed_m)
-    else:
-        results.append(K)
-        print(K.facets_bin)
-        return Hyuntae_algo(pile, candidate_facets_ref, results, aimed_m)
+    if len(pile)>=1:
+        K = pile.pop()
+        if not K.is_closed():
+            if len(K.facets_bin) < G_vector[aimed_m-5]:
+                for face in candidate_facets_ref:
+                    if K.is_candidate(face,aimed_m):
+                        new_K = PureSimplicialComplex(K.facets_bin + [face])
+                        if new_K.is_promising():
+                            pile.append(new_K)
+                            Hyuntae_algo(pile, candidate_facets_ref, results, aimed_m)
+                        else:
+                            Hyuntae_algo(pile, candidate_facets_ref, results, aimed_m)
+        else:
+            if K.is_Z2_homology_sphere() and K.is_minimal_lexico_order():
+                results.append(K)
+                print(K.facets_bin)
+            Hyuntae_algo(pile, candidate_facets_ref, results, aimed_m)
 
 
 def Garrison_Scott(K):

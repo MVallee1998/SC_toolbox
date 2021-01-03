@@ -15,14 +15,14 @@ def read_file(filename):
 
 
 def text(result):
-    name = 'result/PLS_%d_%d_good_seeds_final' % (m, n)
+    name = 'result/PLS_%d_%d_lin_alg_good_seeds_final' % (m, n)
     t = open(name, mode='a', encoding='utf-8')
     for K in result:
         t.write(str(K) + '\n')
     t.close()
 
 
-results = read_file('result/PLS_%d_%d_good_seeds' % (m, n))
+results = read_file('result/PLS_%d_%d_lin_alg_good_seeds' % (m, n))
 
 dictionary = dict()
 for K_bin in results:
