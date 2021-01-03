@@ -4,8 +4,8 @@ import json
 import timeit
 import collections
 
-m = 9
-n = 5
+m = 10
+n = 6
 
 
 def read_file(filename):

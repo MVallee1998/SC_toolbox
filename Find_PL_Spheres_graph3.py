@@ -4,8 +4,8 @@ from multiprocessing import Pool
 from itertools import combinations, permutations
 import timeit
 
-n = 6
-m = 10
+n = 7
+m = 11
 tests = []
 
 def text(result):

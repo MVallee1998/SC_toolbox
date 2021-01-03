@@ -20,8 +20,8 @@ def mod2(x):
 
 
 vmod2 = np.vectorize(mod2)
-m = 9
-n = 5
+m = 10
+n = 6
 
 
 def text(result):
@@ -65,7 +65,7 @@ def f(char_funct):
 
 if __name__ == '__main__':
     list_char_funct = sc.enumerate_char_funct_orbits(n, m)
-    with Pool(processes=2) as pool:
+    with Pool(processes=18) as pool:
         big_result = pool.imap(f, list_char_funct)
         for results in big_result:
             text(results)
