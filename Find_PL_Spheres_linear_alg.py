@@ -20,8 +20,8 @@ def mod2(x):
 
 
 vmod2 = np.vectorize(mod2)
-m = 10
-n = 6
+m = 11
+n = 7
 
 
 def text(result):

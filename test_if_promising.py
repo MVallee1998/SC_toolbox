@@ -3,8 +3,8 @@ import json
 import timeit
 
 
-m = 9
-n = 5
+m = 10
+n = 6
 
 
 def read_file(filename):
@@ -15,15 +15,15 @@ def read_file(filename):
 
 
 def text(result):
-    name = 'tests/PLS_%d_%d_good_seeds_lin_alg_Z2' % (m,n)
+    name = 'result/PLS_%d_%d_lin_alg_final' % (m,n)
     t = open(name, mode='a', encoding='utf-8')
     for K in result:
         t.write(str(K) + '\n')
     t.close()
 
 
-results = read_file('tests/PLS_%d_%d_good_seeds_lin_alg' % (m, n))
-
+results = read_file('result/PLS_%d_%d_lin_alg_all_good_seeds' % (m, n))
+print(len(results))
 K_result = []
 l = 0
 start = timeit.default_timer()
@@ -38,10 +38,13 @@ for K_bytes in results:
     K_bin = json.loads(K_bytes)
     K_sp = sc.PureSimplicialComplex(K_bin)
     if K_sp.Pic == 4 and K_sp.is_promising() and K_sp.is_Z2_homology_sphere():
-        if K_bin not in K_result:
-            # print(K_bin, counter)
-            counter+=1
-            K_result.append(K_bin)
+        K_sp_mini = K_sp.find_minimal_lexico_order()
+        if K_sp_mini <= K_sp.facets_bin:
+            K_bin = K_sp_mini
+            if K_bin not in K_result:
+                print(K_bin, counter)
+                counter+=1
+                K_result.append(K_bin)
 
     # list_2_pow = [1]
     # for k in range(8):

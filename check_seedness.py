@@ -23,10 +23,11 @@ def text(result):
     t.close()
 
 
-results = read_file('result/PLS_%d_%d_lin_alg' % (m, n))
+results = read_file('result/PLS_%d_%d_lin_alg_good_seeds' % (m, n))
 l=0
 counter = 0
 start = timeit.default_timer()
+print(len(results))
 list_seeds = []
 for K_bytes in results:
     l += 1
@@ -36,8 +37,8 @@ for K_bytes in results:
         start = timeit.default_timer()
         print(l / len(results))
     K = json.loads(K_bytes)
-    K_sp = sc.PureSimplicialComplex(K)
-    if K_sp.is_a_seed() and K_sp.Pic == 4 and K_sp.is_promising() and K_sp.is_Z2_homology_sphere() and K not in list_seeds:
+    K_sc = sc.PureSimplicialComplex(K)
+    if K_sc.Pic == 4 and K_sc.is_promising() and K_sc.is_Z2_homology_sphere() and K not in list_seeds:
         list_seeds.append(K)
 
 text(list_seeds)

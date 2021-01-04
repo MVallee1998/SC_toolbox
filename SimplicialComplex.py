@@ -400,11 +400,15 @@ class PureSimplicialComplex:
                             old_labels += list(F_perm_iter)
                             old_labels += list(remaining_labels_perm_iter)
                             relabeled_facets = relabel_facets(self, old_labels)
-                            if json.dumps(relabeled_facets) in dictionary:
-                                print(json.dumps(relabeled_facets))
-                                dictionary[json.dumps(relabeled_facets)] = True
+                            if dictionary != None:
+                                if json.dumps(relabeled_facets) in dictionary:
+                                    return relabeled_facets
+                                else:
+                                    dictionary[json.dumps(relabeled_facets)] = False
                             if relabeled_facets < minimal_facets_bin:
                                 minimal_facets_bin = relabeled_facets.copy()
+        if dictionary!= None:
+            dictionary[json.dumps(minimal_facets_bin)] = True
         return minimal_facets_bin
 
     def is_a_seed(self):
