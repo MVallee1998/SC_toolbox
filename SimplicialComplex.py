@@ -377,6 +377,7 @@ class PureSimplicialComplex:
 
     def find_minimal_lexico_order(self, dictionary=None):
         closed_vertices = []
+        to_add_to_dict=[]
         for v in range(self.m):
             if self.is_closed(list_2_pow[v]):
                 closed_vertices.append(v)
@@ -404,10 +405,12 @@ class PureSimplicialComplex:
                                 if json.dumps(relabeled_facets) in dictionary:
                                     return relabeled_facets
                                 else:
-                                    dictionary[json.dumps(relabeled_facets)] = False
+                                    to_add_to_dict.append(relabeled_facets)
                             if relabeled_facets < minimal_facets_bin:
                                 minimal_facets_bin = relabeled_facets.copy()
         if dictionary!= None:
+            for relabeled_facets in to_add_to_dict:
+                dictionary[json.dumps(relabeled_facets)] = False
             dictionary[json.dumps(minimal_facets_bin)] = True
         return minimal_facets_bin
 

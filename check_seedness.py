@@ -4,8 +4,8 @@ import json
 import timeit
 import collections
 
-m = 10
-n = 6
+m = 8
+n = 4
 
 
 def read_file(filename):
@@ -16,14 +16,14 @@ def read_file(filename):
 
 
 def text(result):
-    name = 'result/PLS_%d_%d_lin_alg_all_good_seeds' % (m, n)
+    name = 'result/PLS_%d_%d_lin_alg_all_seeds' % (m, n)
     t = open(name, mode='a', encoding='utf-8')
     for K in result:
         t.write(str(K) + '\n')
     t.close()
 
 
-results = read_file('result/PLS_%d_%d_lin_alg_good_seeds' % (m, n))
+results = read_file('result/PLS_%d_%d_lin_alg' % (m, n))
 l=0
 counter = 0
 start = timeit.default_timer()
@@ -38,7 +38,7 @@ for K_bytes in results:
         print(l / len(results))
     K = json.loads(K_bytes)
     K_sc = sc.PureSimplicialComplex(K)
-    if K_sc.Pic == 4 and K_sc.is_promising() and K_sc.is_Z2_homology_sphere() and K not in list_seeds:
+    if K_sc.is_a_seed():
         list_seeds.append(K)
 
 text(list_seeds)

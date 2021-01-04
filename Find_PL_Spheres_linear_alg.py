@@ -51,7 +51,7 @@ def f(char_funct):
             candidate = mod2(A.dot(vect_to_mult))
             prod = M.dot(candidate)
             if candidate[0] == 1:
-                if np.where(candidate == 1)[0].size<=G_vector[n-1]:
+                if np.where(candidate == 1)[0].size <= G_vector[n-1]:
                     if not ((prod >= 4).any()):
                         info_facets = list(candidate.reshape(nbr_facets))
                         K = [facets[index] for index in range(len(info_facets)) if info_facets[index] == 1]

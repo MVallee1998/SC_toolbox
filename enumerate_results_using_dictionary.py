@@ -3,8 +3,8 @@ import json
 import timeit
 import collections
 
-m = 10
-n = 6
+m = 8
+n = 4
 
 
 def read_file(filename):
@@ -44,7 +44,7 @@ for K_str in dictionary:
     # print(K_bin)
     K_sc = sc.PureSimplicialComplex(K_bin)
     K_mini = K_sc.find_minimal_lexico_order(dictionary_ref)
-    if dictionary_ref[json.dumps(K_mini)]:
+    if dictionary_ref[json.dumps(K_mini)] == True:
         if K_mini <= K_bin and K_mini not in PL_Spheres:
             counter += 1
             print(K_mini, counter)
