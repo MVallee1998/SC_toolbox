@@ -3,8 +3,8 @@ import json
 import timeit
 
 
-m = 9
-n = 5
+m = 10
+n = 6
 
 
 def read_file(filename):
@@ -15,22 +15,22 @@ def read_file(filename):
 
 
 def text(result):
-    name = 'result/PLS_%d_%d_first_orbit_final' % (m,n)
+    name = 'result/PLS_%d_%d_lin_alg_final' % (m,n)
     t = open(name, mode='a', encoding='utf-8')
     for K in result:
         t.write(str(K) + '\n')
     t.close()
 
 
-results = read_file('result/PLS_%d_%d_first_orbit' % (m, n))
-
+results = read_file('result/PLS_%d_%d_lin_alg_all_good_seeds' % (m, n))
+print(len(results))
 K_result = []
 l = 0
 start = timeit.default_timer()
 counter = 0
 for K_bytes in results:
     l += 1
-    if l % 50 == 0:
+    if l % 100 == 0:
         stop = timeit.default_timer()
         print("time spent :", stop - start)
         start = timeit.default_timer()
