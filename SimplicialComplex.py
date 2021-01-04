@@ -400,7 +400,8 @@ class PureSimplicialComplex:
                             old_labels += list(F_perm_iter)
                             old_labels += list(remaining_labels_perm_iter)
                             relabeled_facets = relabel_facets(self, old_labels)
-                            if dictionary and json.dumps(relabeled_facets) in dictionary:
+                            if json.dumps(relabeled_facets) in dictionary:
+                                print(json.dumps(relabeled_facets))
                                 dictionary[json.dumps(relabeled_facets)] = True
                             if relabeled_facets < minimal_facets_bin:
                                 minimal_facets_bin = relabeled_facets.copy()

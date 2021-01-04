@@ -16,7 +16,7 @@ def read_file(filename):
 
 
 def text(result):
-    name = 'result/PLS_%d_%d_lin_alg_good_seeds' % (m, n)
+    name = 'result/PLS_%d_%d_lin_alg_all_good_seeds' % (m, n)
     t = open(name, mode='a', encoding='utf-8')
     for K in result:
         t.write(str(K) + '\n')
@@ -37,7 +37,7 @@ for K_bytes in results:
         print(l / len(results))
     K = json.loads(K_bytes)
     K_sp = sc.PureSimplicialComplex(K)
-    if K_sp.is_a_seed() and K not in list_seeds:
+    if K_sp.is_a_seed() and K_sp.Pic == 4 and K_sp.is_promising() and K_sp.is_Z2_homology_sphere() and K not in list_seeds:
         list_seeds.append(K)
 
 text(list_seeds)
