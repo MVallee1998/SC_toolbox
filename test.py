@@ -4,8 +4,8 @@ import json
 import timeit
 from itertools import combinations, permutations
 
-m = 10
-n = 6
+m = 8
+n = 4
 
 
 def read_file(filename):
@@ -22,14 +22,12 @@ def text(result):
         t.write(str(K) + '\n')
     t.close()
 
-K = sc.PureSimplicialComplex([list(range(1,n+1))])
-K.list_unclosed_ridges()
-print(K.unclosed_ridges)
-pile = [K]
-results = []
-candidate_facets = []
-for facet_iter in combinations(range(1,m+1),n):
-    candidate_facets.append(sc.face_to_binary(list(facet_iter),m))
-print(len(candidate_facets))
-sc.Hyuntae_algo(pile,candidate_facets,results,m)
-print(results)
+results = read_file('result/PLS_%d_%d_good_seeds_final' % (m, n))
+
+for i in range(len(results)):
+    K1_bin = json.loads(results[i])
+    K1 = sc.PureSimplicialComplex(K1_bin)
+    for j in range(i+1,len(results)):
+        K2_bin = json.loads(results[j])
+        K2 = sc.PureSimplicialComplex(K2_bin)
+        print(sc.are_isom_to(K1,K2),K1.MNF_set,K2.MNF_set)

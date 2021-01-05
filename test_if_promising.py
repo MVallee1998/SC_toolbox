@@ -2,8 +2,9 @@ import SimplicialComplex as sc
 import json
 import timeit
 
-m = 8
-n = 4
+
+m = 10
+n = 6
 
 
 def read_file(filename):
@@ -38,6 +39,7 @@ for K_bytes in results:
     K_sp = sc.PureSimplicialComplex(K_bin)
     if K_sp.Pic == 4 and K_sp.is_promising() and K_sp.is_Z2_homology_sphere():
         if K_bin not in K_result:
+            print(K_bin, counter)
             counter+=1
             K_result.append(K_bin)
 

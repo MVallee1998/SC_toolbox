@@ -159,35 +159,43 @@ class PureSimplicialComplex:
         for i in range(1, int(self.n / 2) + 1):
             self.g_vector.append(self.h_vector[i] - self.h_vector[i - 1])
 
-    def faces_set_to_MNF_set(self):
-        if not self.FP_bin:
-            self.create_FP()
-        # we enumerate all the faces until the time we will have the right dimension faces
-        all_non_faces = [dict() for k in range(self.n + 1)]
-        all_non_faces[-1] = dict.fromkeys(
-            [face_to_binary(list(facet_iter), self.m) for facet_iter in combinations(range(1, self.m + 1), self.n + 1)])
-        for k in range(self.n - 1, -1, -1):  # dimension
-            for face in all_non_faces[k + 1]:  # treat every face of dimension k
-                for element in list_2_pow[:self.m]:  # construct the (k-1)-subfaces
-                    if element | face == face:
-                        subface = element ^ face
-                        if subface not in self.FP_bin[k] and subface not in all_non_faces[k]:
-                            all_non_faces[k][subface] = True
-        self.MNF_set_bin = []
-        # Here we will try every face of dimension k
-        for k in range(1, self.n + 1):
-            # print([binary_to_face(non_face,self.m) for non_face in all_non_faces[k]])
-            for non_face_to_test in all_non_faces[k]:
-                is_MNF = True
-                for element in list_2_pow[:self.m]:  # construct the (k-1)-subfaces
-                    if element | non_face_to_test == non_face_to_test:
-                        subface = element ^ non_face_to_test
-                        if subface not in self.FP_bin[k - 1]:
-                            is_MNF = False
-                            break
-                if is_MNF and non_face_to_test not in self.MNF_set_bin:
-                    self.MNF_set_bin.append(non_face_to_test)
-        self.MNF_set_bin.sort()
+    def compute_MNF_set(self):
+        if not self.MNF_set_bin:
+            if not self.FP_bin:
+                self.create_FP()
+            # we enumerate all the faces until the time we will have the right dimension faces
+            all_non_faces = [dict() for k in range(self.n + 1)]
+            all_non_faces[-1] = dict.fromkeys(
+                [face_to_binary(list(facet_iter), self.m) for facet_iter in combinations(range(1, self.m + 1), self.n + 1)])
+            for k in range(self.n - 1, -1, -1):  # dimension
+                for face in all_non_faces[k + 1]:  # treat every face of dimension k
+                    for element in list_2_pow[:self.m]:  # construct the (k-1)-subfaces
+                        if element | face == face:
+                            subface = element ^ face
+                            if subface not in self.FP_bin[k] and subface not in all_non_faces[k]:
+                                all_non_faces[k][subface] = True
+            self.MNF_set_bin = []
+            # Here we will try every face of dimension k
+            for k in range(1, self.n + 1):
+                # print([binary_to_face(non_face,self.m) for non_face in all_non_faces[k]])
+                for non_face_to_test in all_non_faces[k]:
+                    is_MNF = True
+                    for element in list_2_pow[:self.m]:  # construct the (k-1)-subfaces
+                        if element | non_face_to_test == non_face_to_test:
+                            subface = element ^ non_face_to_test
+                            if subface not in self.FP_bin[k - 1]:
+                                is_MNF = False
+                                break
+                    if is_MNF and non_face_to_test not in self.MNF_set_bin:
+                        self.MNF_set_bin.append(non_face_to_test)
+            self.MNF_set_bin.sort()
+
+    def MNF_bin_to_MNF(self):
+        if not self.MNF_set:
+            self.MNF_set = []
+            for MNF_bin in self.MNF_set_bin:
+                self.MNF_set.append(binary_to_face(MNF_bin,self.m))
+            self.MNF_set.sort()
 
     def compute_facets_from_MNF_set(self):  # TO CHANGE
         M = range(1, self.m + 1)
@@ -416,7 +424,7 @@ class PureSimplicialComplex:
 
     def is_a_seed(self):
         if self.MNF_set_bin == None:
-            self.faces_set_to_MNF_set()
+            self.compute_MNF_set()
         list_all_edges = [face_to_binary(list(facet_iter), self.m) for facet_iter in
                           combinations(range(1, self.m + 1), 2)]
         for edge_bin in list_all_edges:
@@ -427,6 +435,34 @@ class PureSimplicialComplex:
             if is_pair and edge_bin not in self.MNF_set_bin:
                 return False
         return True
+
+
+
+def are_isom_to(K1 ,K2):
+    if K1.n != K2.n or K1.m != K2.m or len(K1.facets_bin) != len(K2.facets_bin):
+        return False
+    K1.compute_MNF_set()
+    K2.compute_MNF_set()
+    K1.MNF_bin_to_MNF()
+    K2.MNF_bin_to_MNF()
+    sizes_MNF_K1 = [len(MNF) for MNF in K1.MNF_set]
+    sizes_MNF_K2 = [len(MNF) for MNF in K2.MNF_set]
+    print(sum(sizes_MNF_K1),sum(sizes_MNF_K2))
+    sizes_MNF_K1.sort()
+    sizes_MNF_K2.sort()
+    if sizes_MNF_K1 != sizes_MNF_K2:
+        return False
+    list_seq_K1 = []
+    for vertice in range(1,K1.n+1):
+        list_seq_K1.append([len(MNF) for MNF in K1.MNF_set if vertice in MNF])
+    list_seq_K2 = []
+    for vertice in range(1,K2.n+1):
+        list_seq_K2.append([len(MNF) for MNF in K2.MNF_set if vertice in MNF])
+    if sorted(list_seq_K1) != sorted(list_seq_K2):
+        return False
+    return(True)
+
+
 
 
 

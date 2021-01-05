@@ -41,7 +41,7 @@ def construct_matrix(char_function, n, m):
 
 
 
-def create_new_cases_array(v):
+def create_new_cases_array(v): #not used anymore
     i = np.where(v > 0)[0][-1]
     N = v.shape[0]
     if i < N - 1:
@@ -52,7 +52,7 @@ def create_new_cases_array(v):
 # create_new_cases_array = np.frompyfunc(create_new_cases_array, 1, 2)
 
 
-def linear_alg_method(M_sparse, M):
+def linear_alg_method(M_sparse, M):  #not used anymore
     def linear_alg_method_rec(array_of_v, results):
         start = timeit.default_timer()
         product = M_sparse.dot(array_of_v)
