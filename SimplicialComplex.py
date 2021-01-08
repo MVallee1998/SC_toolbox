@@ -38,10 +38,19 @@ class PureSimplicialComplex:
         self.facets = facets.copy()
         self.MNF_set = MNF_set
         self.facets_bin = []
+        self.FP_bin = None
+        self.MNF_set_bin = None
+        self.f_vector = None
+        self.h_vector = None
+        self.g_vector = None
+        self.H = None
+        self.unclosed_ridges = None
+        self.closed_faces = None
+        self.list_faces = None
         if facets:
             self.facets = facets
             if type(facets[0]) == list:
-                self.n = len(facets[0])
+                self.n = max([len(facet) for facet in self.facets])
                 labels = []
                 for facet in facets:
                     for i in facet:
@@ -86,21 +95,19 @@ class PureSimplicialComplex:
                 self.m = len(labels)
                 self.MNF_set_bin = [face_to_binary(MNF, self.m) for MNF in self.MNF_set]
                 self.compute_facets_from_MNF_set()
-        self.FP_bin = None
+                self.facets = []
+                for facet_bin in self.facets_bin:
+                    self.facets.append(binary_to_face(facet_bin, self.m))
+                self.facets.sort()
         self.Pic = self.m - self.n
-        self.f_vector = None
-        self.h_vector = None
-        self.g_vector = None
-        self.MNF_set_bin = None
-        self.H = None
-        self.unclosed_ridges = None
-        self.closed_faces = None
-        self.list_faces = None
+
 
     def create_FP(self):
         if self.facets_bin and not self.FP_bin:
             self.FP_bin = [dict() for i in range(self.n)]
-            self.FP_bin[-1] = dict.fromkeys(self.facets_bin, [])
+            for facet_bin in self.facets_bin:
+                self.FP_bin[len(binary_to_face(facet_bin,self.m))-1][facet_bin] = []
+            # self.FP_bin[-1] = dict.fromkeys(self.facets_bin, [])
             for k in range(self.n - 2, -1, -1):
                 for face in self.FP_bin[k + 1]:
                     for element in list_2_pow[:self.m]:
@@ -202,13 +209,13 @@ class PureSimplicialComplex:
         candidate_facets_iter = combinations(M, self.n)
         candidate_facets = []
         for facet_iter in candidate_facets_iter:
-            candidate_facets.append(sum([list_2_pow[k - 1] for k in facet_iter]))
+            candidate_facets.append(sum([list_2_pow[k-1] for k in facet_iter]))
         self.facets_bin = []
         for facet in candidate_facets:
             is_a_facet = True
-            for MNF in self.MNF_set:  # We check if it the facet does not contain some minimal non-face
+            for MNF in self.MNF_set_bin:  # We check if it the facet does not contain some minimal non-face
                 if MNF | facet == facet:
-                    is__a_facet = False
+                    is_a_facet = False
                     break
             if is_a_facet:
                 self.facets_bin.append(facet)
@@ -251,14 +258,13 @@ class PureSimplicialComplex:
                                 ridges_set[subface].append(facet)
             else:
                 ridges_set = self.FP_bin[self.n - 2]
-            for ridge_parents in ridges_set.values():
-                if len(ridge_parents) != 2:
+            for ridge_data in ridges_set.items():
+                if len(ridge_data[1]) != 2:
                     return False
             return True
 
     def list_closed_faces(self):
-        if not self.FP_bin:
-            self.create_FP()
+        self.create_FP()
         if self.closed_faces == None:
             self.closed_faces = []
             for k in range(self.n-2):
@@ -319,8 +325,7 @@ class PureSimplicialComplex:
 
     def Z2_Betti_numbers(self):
         if not self.H:
-            if not self.FP_bin:
-                self.create_FP()
+            self.create_FP()
             FP = [sorted([face for face in self.FP_bin[k]]) for k in range(self.n)]
             if not self.facets_bin:
                 return []
@@ -333,19 +338,10 @@ class PureSimplicialComplex:
                         if face | element == face:
                             boundary_matrices[k][-1].append(dichotomie(FP[k - 1], face ^ element))
                     boundary_matrices[k][-1].sort()
-            # im = 0
-            # H = []
-            # for i in range(1, self.n):
-            #     boundary_matrix = Z2_linear_algebra.Z2Array(len(boundary_matrices[i]), boundary_matrices[i - 1])
-            #     ker = boundary_matrix.n - boundary_matrix.Z2_rank()-1
-            #     H.append(ker - im)
-            #     im = boundary_matrix.n - ker
-            # H.append(len(boundary_matrices[self.n - 1]) - im)
             self.H = bnbr.computeBettiNumbers(boundary_matrices)
 
     def is_Z2_homology_sphere(self):
-        if not self.H:
-            self.Z2_Betti_numbers()
+        self.Z2_Betti_numbers()
         if self.H == [2]:
             return True
         L = [1]

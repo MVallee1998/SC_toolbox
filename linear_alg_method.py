@@ -37,6 +37,7 @@ def construct_matrix(char_function, n, m):
                 ridge = element ^ facets[j]
                 i = sc.dichotomie(ridges, ridge)
                 M[i, j] = 1
+
     return M, facets, ridges
 
 
