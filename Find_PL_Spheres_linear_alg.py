@@ -45,14 +45,14 @@ def increment_index_list_type2(index_array,size_index_array):
     while k < size_index_array and index_array[k] == 1:
         index_array[k] = 0
         k += 1
-    # if k == size_index_array-4:
-    #     print("huitème de passé")
+    if k == size_index_array-4:
+        print("huitème de passé")
     if k != size_index_array:
         index_array[k] = 1
 
 def new_vect_to_mult_array(vector,size_index_array):
     k=0
-    vect_to_mult_array = np.zeros((size_index_array,4096))
+    vect_to_mult_array = np.zeros((size_index_array,4096),dtype=int)
     while k<4096 and vector.any()==1:
         vect_to_mult_array[:,k] = vector.copy()
         k+=1
@@ -78,10 +78,10 @@ def f(char_funct):
     list_v = lam.find_kernel(M)
     nbr = list_v.shape[0]
     print(nbr)
-    np_facets = np.array(facets)
+    np_facets = np.array(facets,dtype=int)
     number_results, nbr_facets = list_v.shape
     A = np.transpose(list_v)
-    vect_to_mult = np.zeros(number_results)
+    vect_to_mult = np.zeros(number_results,dtype=int)
     results = []
     vect_to_mult[0] = 1
     while vect_to_mult.any()==1:

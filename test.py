@@ -1,40 +1,116 @@
-import MNF_set as mnf
-import SimplicialComplex as sc
-import json
-import timeit
+import linear_alg_method as lam
 from itertools import combinations, permutations
+import timeit
+import numpy as np
+import SimplicialComplex as sc
+from scipy.sparse import csr_matrix
+from multiprocessing import Pool
 
-m = 8
-n = 4
+# char_funct = [3, 5, 6, 9, 10, 12, 7, 11, 13, 14, 15, 8, 4, 2, 1]
+# m = 15
+# n = 11
+# M, facets, ridges = construct_matrix(char_funct, n, m)
+# M_sparse = csr_matrix(M)
+# print(len(facets), len(ridges))
+G_vector = [2, 6, 10, 20, 30, 50, 70, 105, 140, 196, 252]
 
 
-def read_file(filename):
-    with open(filename, 'rb') as f:
-        data = f.readlines()
-    data = [x.strip() for x in data]
-    return data
+m = 10
+n = 6
 
 
 def text(result):
-    name = 'result/PLS_%d_%d_good_seeds_lin_alg' % (m, n)
+    name = 'tests/PLS_%d_%d_lin_alg' % (m, n)
     t = open(name, mode='a', encoding='utf-8')
     for K in result:
         t.write(str(K) + '\n')
     t.close()
 
-results = read_file('result/PLS_%d_%d_good_seeds_lin_alg_final' % (m, n))
 
-for K_bin in [[[1, 2, 3, 4, 5], [1, 2, 3, 4, 6], [1, 2, 3, 5, 6], [1, 2, 4, 5, 6], [1, 3, 4, 5, 6], [2, 3, 4, 5, 7], [2, 3, 4, 6, 7], [2, 3, 5, 6, 7], [2, 4, 5, 6, 8], [2, 4, 5, 7, 8], [2, 4, 6, 7, 8], [2, 5, 6, 7, 8], [3, 4, 5, 6, 9], [3, 4, 5, 7, 8], [3, 4, 5, 8, 9], [3, 4, 6, 7, 9], [3, 4, 7, 8, 9], [3, 5, 6, 7, 9], [3, 5, 7, 8, 9], [4, 5, 6, 8, 9], [4, 6, 7, 8, 9], [5, 6, 7, 8, 9]]]:
-    # K_bin = json.loads(K_byte)
-    K_sc = sc.PureSimplicialComplex(K_bin)
-    K_sc.compute_MNF_set()
-    K_sc.MNF_bin_to_MNF()
-    print(K_sc.MNF_set)
-    K_sc.create_FP()
-    for vertex in K_sc.FP_bin[0]:
-        link_of_vertex = sc.Link_of(K_sc,vertex)
-        link_of_vertex_mini_facets = link_of_vertex.find_minimal_lexico_order()
-        link_of_vertex_mini_sc = sc.PureSimplicialComplex(link_of_vertex_mini_facets)
-        link_of_vertex_mini_sc.compute_MNF_set()
-        link_of_vertex_mini_sc.MNF_bin_to_MNF()
-        print("Link of",sc.binary_to_face(vertex,K_sc.m), link_of_vertex_mini_sc.Pic, link_of_vertex_mini_sc.is_a_seed(), link_of_vertex_mini_sc.MNF_set)
+def increment_index_list_type2(index_array,size_index_array):
+    k = 0
+    while k < size_index_array and index_array[k] == 1:
+        index_array[k] = 0
+        k += 1
+    if k == size_index_array-4:
+        print("huitème de passé")
+    if k != size_index_array:
+        index_array[k] = 1
+
+def new_vect_to_mult_array(vector,size_index_array):
+    k=0
+    vect_to_mult_array = np.zeros((size_index_array,1024))
+    while k<1024 and vector.any()==1:
+        vect_to_mult_array[:,k] = vector.copy()
+        k+=1
+        increment_index_list_type2(vector,size_index_array)
+    return vect_to_mult_array
+
+
+def increment_index_list_type3(index_array):
+    k = 0
+    list_zeros = np.where(index_array == 0)[0]
+    if list_zeros.size>0:
+        # print(index_array)
+        first_zero = list_zeros[0]
+        index_array[:first_zero] = 0
+        index_array[first_zero] = 1
+        # print(index_array)
+    else:
+        index_array[:]=0
+
+def f(char_funct):
+    start = timeit.default_timer()
+    M, facets, ridges = lam.construct_matrix(char_funct, n, m)
+    list_v = lam.find_kernel(M)
+    nbr = list_v.shape[0]
+    print(nbr)
+    np_facets = np.array(facets)
+    number_results, nbr_facets = list_v.shape
+    A = np.transpose(list_v)
+    vect_to_mult = np.zeros(number_results)
+    results = []
+    vect_to_mult[0] = 1
+    while vect_to_mult.any()==1:
+        # candidate = A.dot(vect_to_mult) % 2
+        # prod = M.dot(candidate)
+        # if candidate[0] == 1:
+        #     if np.where(candidate == 1)[0].size <= G_vector[n - 1]:
+        #         if not ((prod >= 4).any()):
+        #             info_facets = list(candidate.reshape(nbr_facets))
+        #             K = [facets[index] for index in range(len(info_facets)) if info_facets[index] == 1]
+        #             if K not in results:
+        #                 results.append(K)
+        # increment_index_list_type2(vect_to_mult, number_results)
+
+        vect_to_mult_array = new_vect_to_mult_array(vect_to_mult, number_results)
+        candidate_array = A.dot(vect_to_mult_array) % 2
+        prod = M.dot(candidate_array)
+        having_first_facet = candidate_array[0,:] == 1
+        verifying_G_theorem = np.sum(candidate_array,axis=0) <= G_vector[n - 1]
+        having_every_closed_ridges = np.logical_not((prod >= 4).any(axis=0))
+        good_candidates = candidate_array.T[np.logical_and(np.logical_and(having_first_facet,verifying_G_theorem),having_every_closed_ridges)]
+        for good_candidate in good_candidates:
+            good_candidate_facets = np_facets[good_candidate==1]
+            good_candidate_facets_list = list(good_candidate_facets)
+            results.append(good_candidate_facets_list)
+
+
+    stop = timeit.default_timer()
+    print("Time spent: ", stop - start)
+    print("number of results", len(results))
+    return results
+
+
+# index_array = np.zeros(5)
+# index_array[0] = 1
+# vect_to_mult_array = new_vect_to_mult_array(index_array,5)
+# print(vect_to_mult_array)
+# for k in range(10):
+#     print(vect_to_mult_array)
+#     vect_to_mult_array = new_vect_to_mult_array(index_array, 5)
+
+
+list_char_funct = sc.enumerate_char_funct_orbits(n, m)
+for char_funct in list_char_funct:
+    results = f(char_funct)
