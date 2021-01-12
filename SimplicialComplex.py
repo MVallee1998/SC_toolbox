@@ -434,7 +434,7 @@ class PureSimplicialComplex:
 
 
 
-def are_isom_to(K1 ,K2):
+def are_isom(K1 ,K2):
     if K1.n != K2.n or K1.m != K2.m or len(K1.facets_bin) != len(K2.facets_bin):
         return False
     K1.compute_MNF_set()
