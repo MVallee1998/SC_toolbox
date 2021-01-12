@@ -30,7 +30,7 @@ def construct_matrix(char_function, n, m):
                     ridges.append(ridge)
     ridges.sort()
     # print("Facets and ridges enumerated")
-    M = np.zeros((len(ridges), len(facets)),dtype=np.float)
+    M = np.zeros((len(ridges), len(facets)),dtype = np.float)
     for j in range(len(facets)):
         for element in list_2_pow:
             if element | facets[j] == facets[j]:
@@ -101,10 +101,10 @@ def linear_alg_method(M_sparse, M):  #not used anymore
 
 def find_kernel(M):
     nbr_ridges, nbr_facets = M.shape
-    N = np.transpose(M).copy()
+    N = np.array(np.transpose(M).copy(), dtype = np.float)
     i = 0
     j = 0
-    basis = np.eye(nbr_facets,dtype=np.float)
+    basis = np.eye(nbr_facets,dtype = np.float)
     while j < nbr_ridges and i < nbr_facets:
         if N[i, j] == 0:
             i_0 = -1

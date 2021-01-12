@@ -1,29 +1,20 @@
 import linear_alg_method as lam
-from itertools import combinations, permutations
 import timeit
 import numpy as np
 import SimplicialComplex as sc
-from scipy.sparse import csr_matrix
 from multiprocessing import Pool
 
-# char_funct = [3, 5, 6, 9, 10, 12, 7, 11, 13, 14, 15, 8, 4, 2, 1]
-# m = 15
-# n = 11
-# M, facets, ridges = construct_matrix(char_funct, n, m)
-# M_sparse = csr_matrix(M)
-# print(len(facets), len(ridges))
 G_vector = [2, 6, 10, 20, 30, 50, 70, 105, 140, 196, 252]
 
 
-m = 11
-n = 7
+m = 15
+n = 11
 
 
-def text(result):
+def text(K):
     name = 'tests/PLS_%d_%d_lin_alg' % (m, n)
     t = open(name, mode='a', encoding='utf-8')
-    for K in result:
-        t.write(str(K) + '\n')
+    t.write(str(K) + '\n')
     t.close()
 
 
@@ -52,51 +43,45 @@ def increment_index_list_type2(index_array,size_index_array):
 
 def new_vect_to_mult_array(vector,size_index_array):
     k=0
-    vect_to_mult_array = np.zeros((size_index_array,4096),dtype=int)
-    while k<4096 and vector.any()==1:
+    vect_to_mult_array = np.zeros((size_index_array,1024))
+    while k<1024 and vector.any()==1:
         vect_to_mult_array[:,k] = vector.copy()
         k+=1
         increment_index_list_type2(vector,size_index_array)
     return vect_to_mult_array
 
+def new_vect_to_mult_array_1(x,size_index_array,list_2_pow):
+    vect_to_mult_array = np.zeros((size_index_array,1024),dtype=np.float)
+    for k in range(1024):
+        vect_to_mult_array[:, k] = int_to_filter(x,size_index_array,list_2_pow)
+        x+=1
+        if x==2*list_2_pow[size_index_array-1]:
+            x=0
+            break
+    return vect_to_mult_array,x
 
-def increment_index_list_type3(index_array):
-    k = 0
-    list_zeros = np.where(index_array == 0)[0]
-    if list_zeros.size>0:
-        # print(index_array)
-        first_zero = list_zeros[0]
-        index_array[:first_zero] = 0
-        index_array[first_zero] = 1
-        # print(index_array)
-    else:
-        index_array[:]=0
+def int_to_filter(x, nbr_results,list_2_pow):
+    vector = np.zeros(nbr_results,np.int)
+    for k in range(nbr_results):
+        if list_2_pow[k]|x == x:
+            vector[k] = 1
+        if list_2_pow[k]>x:
+            break
+    return vector
 
 def f(char_funct):
     start = timeit.default_timer()
     M, facets, ridges = lam.construct_matrix(char_funct, n, m)
     list_v = lam.find_kernel(M)
-    nbr = list_v.shape[0]
-    print(nbr)
-    np_facets = np.array(facets,dtype=int)
-    number_results, nbr_facets = list_v.shape
+    nbr_results = list_v.shape[0]
+    print(nbr_results)
+    np_facets = np.array(facets)
     A = np.transpose(list_v)
-    vect_to_mult = np.zeros(number_results,dtype=int)
+    vect_to_mult = np.zeros(nbr_results,dtype=np.float)
     results = []
     vect_to_mult[0] = 1
     while vect_to_mult.any()==1:
-        # candidate = A.dot(vect_to_mult) % 2
-        # prod = M.dot(candidate)
-        # if candidate[0] == 1:
-        #     if np.where(candidate == 1)[0].size <= G_vector[n - 1]:
-        #         if not ((prod >= 4).any()):
-        #             info_facets = list(candidate.reshape(nbr_facets))
-        #             K = [facets[index] for index in range(len(info_facets)) if info_facets[index] == 1]
-        #             if K not in results:
-        #                 results.append(K)
-        # increment_index_list_type2(vect_to_mult, number_results)
-
-        vect_to_mult_array = new_vect_to_mult_array(vect_to_mult, number_results)
+        vect_to_mult_array = new_vect_to_mult_array(vect_to_mult, nbr_results)
         candidate_array = A.dot(vect_to_mult_array) % 2
         prod = M.dot(candidate_array)
         having_first_facet = candidate_array[0,:] == 1
@@ -106,7 +91,11 @@ def f(char_funct):
         for good_candidate in good_candidates:
             good_candidate_facets = np_facets[good_candidate==1]
             good_candidate_facets_list = list(good_candidate_facets)
-            results.append(good_candidate_facets_list)
+            K = sc.PureSimplicialComplex(good_candidate_facets_list)
+            if K.is_a_seed() and K.is_closed() and K.is_promising() and K.is_Z2_homology_sphere():
+                results.append(good_candidate_facets_list)
+                print(good_candidate_facets_list)
+                text(good_candidate_facets_list)
 
 
     stop = timeit.default_timer()
@@ -124,9 +113,12 @@ def f(char_funct):
 #     vect_to_mult_array = new_vect_to_mult_array(index_array, 5)
 
 
-if __name__ == '__main__':
-    list_char_funct = sc.enumerate_char_funct_orbits(n, m)
-    with Pool(processes=1) as pool:
-        big_result = pool.imap(f, list_char_funct)
-        for results in big_result:
-            text(results)
+# if __name__ == '__main__':
+#     list_char_funct = sc.enumerate_char_funct_orbits(n, m)
+#     with Pool(processes=1) as pool:
+#         big_result = pool.imap(f, list_char_funct)
+#         for results in big_result:
+#             text(results)
+list_char_funct = sc.enumerate_char_funct_orbits(n, m)
+for char_funct in list_char_funct:
+    results = f(char_funct)
