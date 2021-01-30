@@ -5,25 +5,10 @@ import SimplicialComplex as sc
 import timeit
 from scipy.sparse import csr_matrix
 
-def construct_matrix(char_function, n, m):
-    Pic = m - n
-    cofacets = []
-    for cofacet_iter in combinations(range(1, m + 1), Pic):
-        sub_array = []
-        for index in cofacet_iter:
-            sub_array.append(char_function[index - 1])
-        if Z2_linear_algebra.Z2Array(Pic, sub_array.copy()).is_invertible():
-            cofacets.append(list(cofacet_iter))
-    facets = []
-    list_2_pow = [1]
-    for k in range(1, m + 1):
-        list_2_pow.append(list_2_pow[-1] * 2)
-    for cofacet in cofacets:
-        facets.append((list_2_pow[m] - 1) ^ sc.face_to_binary(cofacet, m))
-    facets.sort()
+def construct_matrix(facets):
     ridges = []
     for facet in facets:
-        for element in list_2_pow:
+        for element in sc.list_2_pow:
             if element | facet == facet:
                 ridge = element ^ facet
                 if not ridge in ridges:
@@ -32,13 +17,12 @@ def construct_matrix(char_function, n, m):
     # print("Facets and ridges enumerated")
     M = np.zeros((len(ridges), len(facets)),dtype=np.float)
     for j in range(len(facets)):
-        for element in list_2_pow:
+        for element in sc.list_2_pow:
             if element | facets[j] == facets[j]:
                 ridge = element ^ facets[j]
                 i = sc.dichotomie(ridges, ridge)
                 M[i, j] = 1
-
-    return M, facets, ridges
+    return M
 
 
 

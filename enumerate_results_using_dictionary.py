@@ -3,8 +3,8 @@ import json
 import timeit
 import collections
 
-m = 11
-n = 7
+m = 6
+n = 2
 
 
 def read_file(filename):
@@ -15,14 +15,14 @@ def read_file(filename):
 
 
 def text(result):
-    name = 'tests/PLS_%d_%d_lin_alg_final' % (m, n)
+    name = 'final_results/PLS_%d_%d' % (m, n)
     t = open(name, mode='a', encoding='utf-8')
     for K in result:
         t.write(str(K) + '\n')
     t.close()
 
 
-results = read_file('tests/PLS_%d_%d_lin_alg_all_good_seeds' % (m, n))
+results = read_file('result/PLS_%d_%d_lin_alg_all_good_seeds' % (m, n))
 
 dictionary = dict()
 dictionary_ref = dict()
@@ -32,7 +32,7 @@ counter = 0
 l=0
 taille = len(dictionary)
 PL_Spheres = []
-start =  timeit.default_timer()
+start = timeit.default_timer()
 for K_str in dictionary:
     l+=1
     if l % 100 == 0:

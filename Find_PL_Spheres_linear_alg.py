@@ -7,14 +7,14 @@ from multiprocessing import Pool
 G_vector = [2, 6, 10, 20, 30, 50, 70, 105, 140, 196, 252]
 
 
-m = 15
-n = 11
+m = 10
+n = 6
+raw_results_PATH = 'raw_results/PLS_%d_%d' % (m, n)
 
-
-def text(K):
-    name = 'tests/PLS_%d_%d_lin_alg' % (m, n)
-    t = open(name, mode='a', encoding='utf-8')
-    t.write(str(K) + '\n')
+def text(results,path):
+    t = open(path, mode='a', encoding='utf-8')
+    for K in results:
+        t.write(str(K) + '\n')
     t.close()
 
 
@@ -71,7 +71,8 @@ def int_to_filter(x, nbr_results,list_2_pow):
 
 def f(char_funct):
     start = timeit.default_timer()
-    M, facets, ridges = lam.construct_matrix(char_funct, n, m)
+    facets = sc.find_facets_compatible_with_lambda(char_funct,m,n)
+    M = lam.construct_matrix(facets)
     list_v = lam.find_kernel(M)
     nbr_results = list_v.shape[0]
     print(nbr_results)
@@ -91,11 +92,9 @@ def f(char_funct):
         for good_candidate in good_candidates:
             good_candidate_facets = np_facets[good_candidate==1]
             good_candidate_facets_list = list(good_candidate_facets)
-            K = sc.PureSimplicialComplex(good_candidate_facets_list)
-            if K.is_a_seed() and K.is_closed() and K.is_promising() and K.is_Z2_homology_sphere():
-                results.append(good_candidate_facets_list)
-                print(good_candidate_facets_list)
-                text(good_candidate_facets_list)
+            results.append(good_candidate_facets_list)
+            # K = sc.PureSimplicialComplex(good_candidate_facets_list)
+            # text(good_candidate_facets_list,raw_results_PATH)
 
 
     stop = timeit.default_timer()
@@ -113,12 +112,13 @@ def f(char_funct):
 #     vect_to_mult_array = new_vect_to_mult_array(index_array, 5)
 
 
-# if __name__ == '__main__':
-#     list_char_funct = sc.enumerate_char_funct_orbits(n, m)
-#     with Pool(processes=1) as pool:
-#         big_result = pool.imap(f, list_char_funct)
-#         for results in big_result:
-#             text(results)
-list_char_funct = sc.enumerate_char_funct_orbits(n, m)
-for char_funct in list_char_funct:
-    results = f(char_funct)
+if __name__ == '__main__':
+    list_char_funct = sc.enumerate_char_funct_orbits(n, m)
+    with Pool(processes=4) as pool:
+        big_result = pool.imap(f, list_char_funct)
+        for results in big_result:
+            text(results,raw_results_PATH)
+
+# list_char_funct = sc.enumerate_char_funct_orbits(n, m)
+# for char_funct in list_char_funct:
+#     results = f(char_funct)

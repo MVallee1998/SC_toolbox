@@ -37,6 +37,7 @@ class PureSimplicialComplex:
         self.n = n
         self.facets = facets.copy()
         self.MNF_set = MNF_set
+        self.NF_set_bin = None
         self.facets_bin = []
         self.FP_bin = None
         self.MNF_set_bin = None
@@ -165,15 +166,14 @@ class PureSimplicialComplex:
         self.g_vector = []
         for i in range(1, int(self.n / 2) + 1):
             self.g_vector.append(self.h_vector[i] - self.h_vector[i - 1])
-
-    def compute_MNF_set(self):
-        if not self.MNF_set_bin:
-            if not self.FP_bin:
-                self.create_FP()
+    def compute_NF_set(self):
+        if not self.NF_set_bin:
+            self.create_FP()
             # we enumerate all the faces until the time we will have the right dimension faces
             all_non_faces = [dict() for k in range(self.n + 1)]
             all_non_faces[-1] = dict.fromkeys(
-                [face_to_binary(list(facet_iter), self.m) for facet_iter in combinations(range(1, self.m + 1), self.n + 1)])
+                [face_to_binary(list(facet_iter), self.m) for facet_iter in
+                 combinations(range(1, self.m + 1), self.n + 1)])
             for k in range(self.n - 1, -1, -1):  # dimension
                 for face in all_non_faces[k + 1]:  # treat every face of dimension k
                     for element in list_2_pow[:self.m]:  # construct the (k-1)-subfaces
@@ -181,11 +181,17 @@ class PureSimplicialComplex:
                             subface = element ^ face
                             if subface not in self.FP_bin[k] and subface not in all_non_faces[k]:
                                 all_non_faces[k][subface] = True
+            self.NF_set_bin = all_non_faces.copy()
+
+
+    def compute_MNF_set(self):
+        if not self.MNF_set_bin:
+            self.compute_NF_set()
             self.MNF_set_bin = []
             # Here we will try every face of dimension k
             for k in range(1, self.n + 1):
                 # print([binary_to_face(non_face,self.m) for non_face in all_non_faces[k]])
-                for non_face_to_test in all_non_faces[k]:
+                for non_face_to_test in self.NF_set_bin[k]:
                     is_MNF = True
                     for element in list_2_pow[:self.m]:  # construct the (k-1)-subfaces
                         if element | non_face_to_test == non_face_to_test:
@@ -433,6 +439,11 @@ class PureSimplicialComplex:
         return True
 
 
+def list_all_permu_MNF(list_bij_K2,k,max_size,results, current_bij):
+    if k == max_size:
+        results.append()
+
+
 
 def are_isom(K1 ,K2):
     if K1.n != K2.n or K1.m != K2.m or len(K1.facets_bin) != len(K2.facets_bin):
@@ -449,13 +460,40 @@ def are_isom(K1 ,K2):
     if sizes_MNF_K1 != sizes_MNF_K2:
         return False
     list_seq_K1 = []
-    for vertice in range(1,K1.n+1):
-        list_seq_K1.append([len(MNF) for MNF in K1.MNF_set if vertice in MNF])
+    for vertex in range(1,K1.m+1):
+        list_seq_K1.append(sorted([len(MNF) for MNF in K1.MNF_set if vertex in MNF]))
     list_seq_K2 = []
-    for vertice in range(1,K2.n+1):
-        list_seq_K2.append([len(MNF) for MNF in K2.MNF_set if vertice in MNF])
+    for vertex in range(1,K2.m+1):
+        list_seq_K2.append(sorted([len(MNF) for MNF in K2.MNF_set if vertex in MNF]))
     if sorted(list_seq_K1) != sorted(list_seq_K2):
         return False
+    types_dict_K1 = dict()
+    print(list_seq_K1)
+    for index_vertex in range(K1.m):
+        vertex = index_vertex+1
+        if json.dumps(list_seq_K1[index_vertex]) not in types_dict_K1:
+            types_dict_K1[json.dumps(list_seq_K1[index_vertex])] = [vertex]
+        else:
+            types_dict_K1[json.dumps(list_seq_K1[index_vertex])].append(vertex)
+    types_dict_K2 = dict()
+    for index_vertex in range(K2.m):
+        vertex = index_vertex + 1
+        if vertex not in types_dict_K1[json.dumps(list_seq_K2[index_vertex])]:
+            if json.dumps(list_seq_K2[index_vertex]) not in types_dict_K2:
+                types_dict_K2[json.dumps(list_seq_K2[index_vertex])] = [vertex]
+            else:
+                types_dict_K2[json.dumps(list_seq_K2[index_vertex])].append(vertex)
+    list_bij_K1 = []
+    list_bij_K2 = []
+
+    for item in types_dict_K1.items():
+        seq, list_vertices = item
+        list_bij_K1.append(list_vertices)
+        list_bij_K2.append(types_dict_K2[seq])
+    print()
+    print(list_bij_K1,list_bij_K2)
+
+
     return(True)
 
 
@@ -555,7 +593,6 @@ def Hyuntae_algo(pile, candidate_facets_ref, results, aimed_m):
         else:
             if K.is_Z2_homology_sphere() and K.is_minimal_lexico_order():
                 results.append(K)
-                print(K.facets_bin)
             Hyuntae_algo(pile, candidate_facets_ref, results, aimed_m)
 
 
@@ -620,6 +657,7 @@ def char_funct_array_to_bin(char_funct):
     return res
 
 
+
 def enumerate_char_funct_orbits(n, m):
     list_char_funct_bin = []
     list_char_funct = []
@@ -674,6 +712,20 @@ def enumerate_all_lambdas(n, m):
         list_char_funct.append(char_funct)
     return list_char_funct
 
+def find_facets_compatible_with_lambda(char_function,m,n):
+    Pic = m - n
+    cofacets = []
+    for cofacet_iter in combinations(range(1, m + 1), Pic):
+        sub_array = []
+        for index in cofacet_iter:
+            sub_array.append(char_function[index - 1])
+        if Z2la.Z2Array(Pic, sub_array.copy()).is_invertible():
+            cofacets.append(list(cofacet_iter))
+    facets = []
+    for cofacet in cofacets:
+        facets.append((list_2_pow[m] - 1) ^ face_to_binary(cofacet, m))
+    facets.sort()
+    return facets
 
 def text(result):
     name = '/GL4'

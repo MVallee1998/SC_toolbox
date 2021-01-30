@@ -3,8 +3,8 @@ import json
 import timeit
 
 
-m = 11
-n = 7
+m = 6
+n = 2
 
 
 def read_file(filename):
@@ -15,14 +15,14 @@ def read_file(filename):
 
 
 def text(result):
-    name = 'tests/PLS_%d_%d_lin_alg_all_good_seeds' % (m,n)
+    name = 'result/PLS_%d_%d_lin_alg_all_good_seeds' % (m,n)
     t = open(name, mode='a', encoding='utf-8')
     for K in result:
         t.write(str(K) + '\n')
     t.close()
 
 
-results = read_file('tests/PLS_%d_%d_lin_alg_all_seeds' % (m, n))
+results = read_file('result/PLS_%d_%d_lin_alg_all_seeds' % (m, n))
 print(len(results))
 K_result = []
 l = 0
@@ -37,7 +37,7 @@ for K_bytes in results:
         print(l / len(results))
     K_bin = json.loads(K_bytes)
     K_sp = sc.PureSimplicialComplex(K_bin)
-    if K_sp.Pic == 4 and K_sp.is_promising() and K_sp.is_Z2_homology_sphere():
+    if K_sp.Pic == 4 and K_sp.is_closed() and K_sp.is_promising() and K_sp.is_Z2_homology_sphere():
         if K_bin not in K_result:
             print(K_bin, counter)
             counter+=1
