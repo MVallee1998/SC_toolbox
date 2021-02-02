@@ -1,12 +1,10 @@
 import numpy.polynomial as npp
-import binary_search_tree as bst
 from itertools import combinations, permutations
 import Betti_numbers as bnbr
 import numpy as np
-import sys
 import Z2_linear_algebra as Z2la
 import json
-import collections as coll
+import sqlite3
 
 # sys.setrecursionlimit(1000)
 
@@ -424,6 +422,44 @@ class PureSimplicialComplex:
             dictionary[json.dumps(minimal_facets_bin)] = True
         return minimal_facets_bin
 
+    def find_minimal_lexico_order_db(self, cursor):
+        closed_vertices = []
+        to_add_to_dict=[]
+        for v in range(self.m):
+            if self.is_closed(list_2_pow[v]):
+                closed_vertices.append(v)
+        minimal_facets_bin = self.facets_bin.copy()
+        for v in closed_vertices:
+            ridges_containing_v = [ridge for ridge in self.FP_bin[self.n - 2] if
+                                   ridge | list_2_pow[v] == ridge]
+            for ridge in ridges_containing_v:
+                ridge_labels_to_modify = self.binary_to_face(ridge ^ list_2_pow[v])
+                for ridge_labels_permu_iter in permutations(ridge_labels_to_modify):
+                    F = []
+                    for facet in self.facets_bin:
+                        if facet | ridge == facet:
+                            F += (self.binary_to_face(facet ^ ridge))
+                    remaining_labels = self.binary_to_face(
+                        (list_2_pow[self.m] - 1) ^ ridge ^ list_2_pow[F[0]] ^ list_2_pow[F[1]])
+                    for F_perm_iter in permutations(F):
+                        for remaining_labels_perm_iter in permutations(remaining_labels):
+                            old_labels = [v]
+                            old_labels += list(ridge_labels_permu_iter)
+                            old_labels += list(F_perm_iter)
+                            old_labels += list(remaining_labels_perm_iter)
+                            relabeled_facets = relabel_facets(self, old_labels)
+                            cursor.execute('SELECT * FROM PLSpheres WHERE facets_bin=?', '"' + json.dumps(relabeled_facets) + '"')
+                            if cursor.fetchone():
+                                return relabeled_facets
+                            else:
+                                to_add_to_dict.append('"' + json.dumps(relabeled_facets) + '"')
+                            if relabeled_facets < minimal_facets_bin:
+                                minimal_facets_bin = relabeled_facets.copy()
+        query = "INSERT OR IGNORE INTO PLSpheres (facets_bin) VALUES (?);"
+        cursor.executemany(query,to_add_to_dict)
+        cursor.commit()
+        return minimal_facets_bin
+
     def is_a_seed(self):
         if self.MNF_set_bin == None:
             self.compute_MNF_set()
@@ -454,7 +490,6 @@ def are_isom(K1 ,K2):
     K2.MNF_bin_to_MNF()
     sizes_MNF_K1 = [len(MNF) for MNF in K1.MNF_set]
     sizes_MNF_K2 = [len(MNF) for MNF in K2.MNF_set]
-    print(sum(sizes_MNF_K1),sum(sizes_MNF_K2))
     sizes_MNF_K1.sort()
     sizes_MNF_K2.sort()
     if sizes_MNF_K1 != sizes_MNF_K2:
@@ -467,34 +502,36 @@ def are_isom(K1 ,K2):
         list_seq_K2.append(sorted([len(MNF) for MNF in K2.MNF_set if vertex in MNF]))
     if sorted(list_seq_K1) != sorted(list_seq_K2):
         return False
-    types_dict_K1 = dict()
-    print(list_seq_K1)
-    for index_vertex in range(K1.m):
-        vertex = index_vertex+1
-        if json.dumps(list_seq_K1[index_vertex]) not in types_dict_K1:
-            types_dict_K1[json.dumps(list_seq_K1[index_vertex])] = [vertex]
-        else:
-            types_dict_K1[json.dumps(list_seq_K1[index_vertex])].append(vertex)
-    types_dict_K2 = dict()
-    for index_vertex in range(K2.m):
-        vertex = index_vertex + 1
-        if vertex not in types_dict_K1[json.dumps(list_seq_K2[index_vertex])]:
-            if json.dumps(list_seq_K2[index_vertex]) not in types_dict_K2:
-                types_dict_K2[json.dumps(list_seq_K2[index_vertex])] = [vertex]
-            else:
-                types_dict_K2[json.dumps(list_seq_K2[index_vertex])].append(vertex)
-    list_bij_K1 = []
-    list_bij_K2 = []
-
-    for item in types_dict_K1.items():
-        seq, list_vertices = item
-        list_bij_K1.append(list_vertices)
-        list_bij_K2.append(types_dict_K2[seq])
-    print()
-    print(list_bij_K1,list_bij_K2)
+    K1_mini_facets_bin = K1.find_minimal_lexico_order()
+    K2_mini_facets_bin = K2.find_minimal_lexico_order()
+    return K1.facets_bin == K2_mini_facets_bin
 
 
-    return(True)
+    # types_dict_K1 = dict()
+    # print(list_seq_K1)
+    # for index_vertex in range(K1.m):
+    #     vertex = index_vertex+1
+    #     if json.dumps(list_seq_K1[index_vertex]) not in types_dict_K1:
+    #         types_dict_K1[json.dumps(list_seq_K1[index_vertex])] = [vertex]
+    #     else:
+    #         types_dict_K1[json.dumps(list_seq_K1[index_vertex])].append(vertex)
+    # types_dict_K2 = dict()
+    # for index_vertex in range(K2.m):
+    #     vertex = index_vertex + 1
+    #     if vertex not in types_dict_K1[json.dumps(list_seq_K2[index_vertex])]:
+    #         if json.dumps(list_seq_K2[index_vertex]) not in types_dict_K2:
+    #             types_dict_K2[json.dumps(list_seq_K2[index_vertex])] = [vertex]
+    #         else:
+    #             types_dict_K2[json.dumps(list_seq_K2[index_vertex])].append(vertex)
+    # list_bij_K1 = []
+    # list_bij_K2 = []
+    #
+    # for item in types_dict_K1.items():
+    #     seq, list_vertices = item
+    #     list_bij_K1.append(list_vertices)
+    #     list_bij_K2.append(types_dict_K2[seq])
+    # print()
+    # print(list_bij_K1,list_bij_K2)
 
 
 
