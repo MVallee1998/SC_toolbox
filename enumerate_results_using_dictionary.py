@@ -14,10 +14,11 @@ def read_file(filename):
     return data
 
 
-def text(K):
+def text(result):
     name = 'final_results/PLS_%d_%d' % (m, n)
     t = open(name, mode='a', encoding='utf-8')
-    t.write(str(K) + '\n')
+    for K in result:
+        t.write(str(K) + '\n')
     t.close()
 
 
@@ -48,4 +49,5 @@ for K_str in dictionary:
             counter += 1
             print(K_mini, counter)
             PL_Spheres.append(K_mini)
-            text(K_mini)
+
+text(PL_Spheres)

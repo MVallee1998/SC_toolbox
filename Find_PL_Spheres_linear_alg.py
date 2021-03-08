@@ -43,16 +43,16 @@ def increment_index_list_type2(index_array,size_index_array):
 
 def new_vect_to_mult_array(vector,size_index_array):
     k=0
-    vect_to_mult_array = np.zeros((size_index_array,1024))
-    while k<1024 and vector.any()==1:
+    vect_to_mult_array = np.zeros((size_index_array,16384*2))
+    while k<16384*2 and vector.any()==1:
         vect_to_mult_array[:,k] = vector.copy()
         k+=1
         increment_index_list_type2(vector,size_index_array)
     return vect_to_mult_array
 
 def new_vect_to_mult_array_1(x,size_index_array,list_2_pow):
-    vect_to_mult_array = np.zeros((size_index_array,1024),dtype=np.float)
-    for k in range(1024):
+    vect_to_mult_array = np.zeros((size_index_array,4096),dtype=np.float)
+    for k in range(4096):
         vect_to_mult_array[:, k] = int_to_filter(x,size_index_array,list_2_pow)
         x+=1
         if x==2*list_2_pow[size_index_array-1]:
@@ -114,7 +114,7 @@ def f(char_funct):
 
 if __name__ == '__main__':
     list_char_funct = sc.enumerate_char_funct_orbits(n, m)
-    with Pool(processes=4) as pool:
+    with Pool(processes=8) as pool:
         big_result = pool.imap(f, list_char_funct)
         for results in big_result:
             text(results,raw_results_PATH)
