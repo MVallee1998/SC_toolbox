@@ -439,11 +439,6 @@ class PureSimplicialComplex:
         return True
 
 
-def list_all_permu_MNF(list_bij_K2,k,max_size,results, current_bij):
-    if k == max_size:
-        results.append()
-
-
 
 def are_isom(K1 ,K2):
     if K1.n != K2.n or K1.m != K2.m or len(K1.facets_bin) != len(K2.facets_bin):
@@ -454,7 +449,6 @@ def are_isom(K1 ,K2):
     K2.MNF_bin_to_MNF()
     sizes_MNF_K1 = [len(MNF) for MNF in K1.MNF_set]
     sizes_MNF_K2 = [len(MNF) for MNF in K2.MNF_set]
-    print(sum(sizes_MNF_K1),sum(sizes_MNF_K2))
     sizes_MNF_K1.sort()
     sizes_MNF_K2.sort()
     if sizes_MNF_K1 != sizes_MNF_K2:
@@ -468,7 +462,6 @@ def are_isom(K1 ,K2):
     if sorted(list_seq_K1) != sorted(list_seq_K2):
         return False
     types_dict_K1 = dict()
-    print(list_seq_K1)
     for index_vertex in range(K1.m):
         vertex = index_vertex+1
         if json.dumps(list_seq_K1[index_vertex]) not in types_dict_K1:
@@ -478,23 +471,54 @@ def are_isom(K1 ,K2):
     types_dict_K2 = dict()
     for index_vertex in range(K2.m):
         vertex = index_vertex + 1
-        if vertex not in types_dict_K1[json.dumps(list_seq_K2[index_vertex])]:
-            if json.dumps(list_seq_K2[index_vertex]) not in types_dict_K2:
-                types_dict_K2[json.dumps(list_seq_K2[index_vertex])] = [vertex]
-            else:
-                types_dict_K2[json.dumps(list_seq_K2[index_vertex])].append(vertex)
+        if json.dumps(list_seq_K2[index_vertex]) not in types_dict_K2:
+            types_dict_K2[json.dumps(list_seq_K2[index_vertex])] = [vertex]
+        else:
+            types_dict_K2[json.dumps(list_seq_K2[index_vertex])].append(vertex)
     list_bij_K1 = []
     list_bij_K2 = []
-
     for item in types_dict_K1.items():
         seq, list_vertices = item
         list_bij_K1.append(list_vertices)
         list_bij_K2.append(types_dict_K2[seq])
-    print()
-    print(list_bij_K1,list_bij_K2)
-
-
-    return(True)
+    permutations_relabelling = []
+    for k in range(len(list_bij_K2)):
+        permutations_relabelling.append([list(permutation_iter) for permutation_iter in permutations(list_bij_K2[k])])
+    K1_labels = []
+    for labels in list_bij_K1:
+        K1_labels += labels
+    i=0
+    j=0
+    current_relabelling = []
+    list_positions = [0]*len(permutations_relabelling)
+    while i>=0:
+        if i==len(permutations_relabelling):
+            K2_labels = []
+            for labels in current_relabelling:
+                K2_labels += labels
+            help_bij = [(K1_labels[k], K2_labels[k]) for k in range(len(K1_labels))]
+            help_bij.sort()
+            old_labels = [data[1] - 1 for data in help_bij]
+            if K1.MNF_set_bin == relabel_MNF(K2, old_labels):
+                return True
+            if i!=0:
+                current_relabelling.pop()
+            i-=1
+            list_positions[i] +=1
+            continue
+        j = list_positions[i]
+        if j == len(permutations_relabelling[i]):
+            list_positions[i] = 0
+            if i!=0:
+                current_relabelling.pop()
+            i-=1
+            list_positions[i] +=1
+            continue
+        else:
+            current_relabelling.append(permutations_relabelling[i][j])
+            list_positions[i] = j
+            i+=1
+    return False
 
 
 
@@ -512,6 +536,18 @@ def relabel_facets(K, old_labels):
                 new_facets[k] += list_2_pow[l]
     new_facets.sort()
     return new_facets
+
+def relabel_MNF(K, old_labels):
+    if len(old_labels) != K.m:
+        raise Exception
+    new_MNF = [0] * len(K.MNF_set_bin)
+    for k in range(len(new_MNF)):
+        for l in range(K.m):
+            if K.MNF_set_bin[k] | list_2_pow[old_labels[l]] == K.MNF_set_bin[k]:
+                # the case when 01 or 10
+                new_MNF[k] += list_2_pow[l]
+    new_MNF.sort()
+    return new_MNF
 
 
 def Link_of(K, F):
@@ -617,6 +653,7 @@ def Garrison_Scott(K):
     for k in range(K.n, K.m):
         current_lambda.append(0)
     while i >= K.n:
+        list_S[K.n - i] = list(range(1, list_2_pow[K.n]))
         for face_bin in K_full_FP:
             if (face_bin < list_2_pow[i + 1]) and ((face_bin | list_2_pow[i]) == face_bin):
                 linear_comb = 0
@@ -627,18 +664,79 @@ def Garrison_Scott(K):
                 index = dichotomie(list_S[K.n - i], linear_comb)
                 if index != -1:
                     list_S[K.n - i].pop(index)
-        while len(list_S[K.n - i]) > 0:
+        while i>= K.n:
+            if list_S[K.n - i] == []:
+                i -= 1
+                continue
             current_lambda[i] = list_S[K.n - i].pop()
+
             if i + 1 == K.m:
                 list_char_funct.append(current_lambda.copy())
+                continue
             else:
-                i += 1
+                i+=1
                 break
-        if len(list_S[K.n - i]) == 0:
-            list_S[K.n - i] = list(range(1, list_2_pow[K.n]))
-            i -= 1
     return list_char_funct
 
+
+def IDCM_Garrison_Scott(K):
+    K.create_FP()
+    m = K.m
+    n = K.n
+    p = K.Pic
+    full_face = list_2_pow[m]-1
+    max_faces = []
+    for face in K.facets_bin:
+        max_faces.append(face^full_face)
+    #We create a simplicial complex having its maximal faces represented by the cofacets of K
+    L = PureSimplicialComplex(max_faces)
+    L.create_FP()
+    CF_full_set = []
+    for k in range(L.n):
+        for face in L.FP_bin[k]:
+            CF_full_set.append(face)
+    # The list CF_full_set represents all the sub-cofacets of K
+    current_IDCM = [0]*m
+    for k in range(n,m):
+        current_IDCM[k] = list_2_pow[k-n]
+    S = []
+    for k in range(1,list_2_pow[p]):
+        S.append(k)
+    list_S = [S.copy() for k in range(m)]
+    list_results = []
+    list_condition_i = [0]*m
+    sum = 0
+    for k in range(m-1,-1,-1):
+        sum+= list_2_pow[k]
+        list_condition_i[k] = sum
+    i=n-1
+    while i<n:
+        list_S[i] = S.copy()
+        for c in current_IDCM[i+1:]:
+            list_S[i].remove(c)
+        for CF in CF_full_set:
+            if CF | list_condition_i[i] == list_condition_i[i] and CF | list_2_pow[i] == CF:
+                list_indexes_CF = []
+                for j in range(m):
+                    if list_2_pow[j] | CF == CF and j!=i:
+                        list_indexes_CF.append(j)
+                linear_comb = 0
+                for j in list_indexes_CF:
+                    linear_comb ^= current_IDCM[j]
+                if linear_comb in list_S[i]:
+                    list_S[i].remove(linear_comb)
+        while i<n:
+            if list_S[i]==[]:
+                i+=1
+                continue
+            current_IDCM[i] = list_S[i].pop()
+            if i==0:
+                list_results.append(current_IDCM.copy())
+                continue
+            else:
+                i-=1
+                break
+    return list_results
 
 def int_to_bin_array(x, k):
     res = np.zeros(k)

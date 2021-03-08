@@ -58,28 +58,36 @@ for i in range(len(list_of_seeds)):
 stop = timeit.default_timer()
 print("Good seeds selected", " Time spent:", stop - start)
 
+N = len(list_of_good_seeds)
 list_final = []
 counter = 0
 counter_PLS = 0
 dictionary_ref = dict()
 start = timeit.default_timer()
 start_sub = timeit.default_timer()
-for i in range(len(list_of_good_seeds)):
-    counter+=1
-    if counter % 100 == 0:
+
+K1 = sc.PureSimplicialComplex(list_of_good_seeds[0])
+eq_classes = [K1]
+for i in range(1,N):
+    if i%100 == 0:
         stop_sub = timeit.default_timer()
-        print("time spent for 100:", stop_sub - start_sub, " Percentage processed: ", counter / len(list_of_good_seeds) * 100, "%")
+        print("Time spent for 100", stop_sub-start_sub,(i/N)*100,"%",len(eq_classes))
         start_sub = timeit.default_timer()
-    facets = list_of_good_seeds[i]
-    K = sc.PureSimplicialComplex(facets)
-    K_mini_facets = K.find_minimal_lexico_order(dictionary_ref)
-    if dictionary_ref[json.dumps(K_mini_facets)] == True:
-        if K_mini_facets <= facets and K_mini_facets not in list_final:
-            counter_PLS += 1
-            print(K_mini_facets, counter_PLS)
-            list_final.append(K_mini_facets)
-    del K
+    K2 = sc.PureSimplicialComplex(list_of_good_seeds[i])
+    is_isom = False
+    for K1 in eq_classes:
+        if sc.are_isom(K1,K2):
+            is_isom = True
+            break
+    if not is_isom:
+        eq_classes.append(K2)
+
+data_to_text = []
+for K in eq_classes:
+    data_to_text.append(K.facets_bin)
+
+text(data_to_text,final_results_path)
 stop = timeit.default_timer()
-text(list_final,final_results_path)
 print("Final result saved.", " Time spent:", stop - start)
+
 
