@@ -7,8 +7,8 @@ from multiprocessing import Pool
 G_vector = [2, 6, 10, 20, 30, 50, 70, 105, 140, 196, 252]
 
 
-m = 12
-n = 8
+m = 13
+n = 9
 raw_results_PATH = 'raw_results/PLS_%d_%d' % (m, n)
 partial_results_PATH = 'partial_results/PLS_%d_%d' % (m, n)
 
