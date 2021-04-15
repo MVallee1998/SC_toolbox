@@ -499,7 +499,7 @@ def are_isom(K1 ,K2):
             help_bij = [(K1_labels[k], K2_labels[k]) for k in range(len(K1_labels))]
             help_bij.sort()
             old_labels = [data[1] - 1 for data in help_bij]
-            if K1.MNF_set_bin == relabel_MNF(K2, old_labels):
+            if (K1.MNF_set_bin == relabel_MNF(K2, old_labels)).all():
                 return True
             if i!=0:
                 current_relabelling.pop()
@@ -540,7 +540,7 @@ def relabel_facets(K, old_labels):
 def relabel_MNF(K, old_labels):
     if len(old_labels) != K.m:
         raise Exception
-    new_MNF = [0] * len(K.MNF_set_bin)
+    new_MNF = np.zeros(len(K.MNF_set_bin))
     for k in range(len(new_MNF)):
         for l in range(K.m):
             if K.MNF_set_bin[k] | list_2_pow[old_labels[l]] == K.MNF_set_bin[k]:
@@ -685,23 +685,16 @@ def IDCM_Garrison_Scott(K):
     n = K.n
     p = K.Pic
     full_face = list_2_pow[m]-1
-    max_faces = []
-    for face in K.facets_bin:
-        max_faces.append(face^full_face)
+    max_faces = [face^full_face for face in K.facets_bin]
     #We create a simplicial complex having its maximal faces represented by the cofacets of K
     L = PureSimplicialComplex(max_faces)
     L.create_FP()
-    CF_full_set = []
-    for k in range(L.n):
-        for face in L.FP_bin[k]:
-            CF_full_set.append(face)
+    CF_full_set = [face for face in [L.FP_bin[k] for k in range(L.n)]]
     # The list CF_full_set represents all the sub-cofacets of K
     current_IDCM = [0]*m
     for k in range(n,m):
         current_IDCM[k] = list_2_pow[k-n]
-    S = []
-    for k in range(1,list_2_pow[p]):
-        S.append(k)
+    S = [k in range(1,list_2_pow[p])]
     list_S = [S.copy() for k in range(m)]
     list_results = []
     list_condition_i = [0]*m
@@ -716,10 +709,7 @@ def IDCM_Garrison_Scott(K):
             list_S[i].remove(c)
         for CF in CF_full_set:
             if CF | list_condition_i[i] == list_condition_i[i] and CF | list_2_pow[i] == CF:
-                list_indexes_CF = []
-                for j in range(m):
-                    if list_2_pow[j] | CF == CF and j!=i:
-                        list_indexes_CF.append(j)
+                list_indexes_CF = [j for j in range(m) if list_2_pow[j] | CF == CF and j!=i]
                 linear_comb = 0
                 for j in list_indexes_CF:
                     linear_comb ^= current_IDCM[j]
@@ -748,10 +738,8 @@ def int_to_bin_array(x, k):
 
 def char_funct_array_to_bin(char_funct):
     m, Pic = char_funct.shape
-    res = []
     np_list_2_pow = np.array(list_2_pow[:Pic])
-    for v in char_funct:
-        res.append(np.sum(np_list_2_pow[v == 1]))
+    res = [np.sum(np_list_2_pow[v == 1]) for v in char_funct]
     return res
 
 
