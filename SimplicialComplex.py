@@ -438,7 +438,35 @@ class PureSimplicialComplex:
                 return False
         return True
 
+def wedge(K,v):
+    if v>K.m or v<0:
+        raise Exception
+    K.compute_MNF_set()
+    print(K.MNF_set)
+    K.MNF_bin_to_MNF()
+    new_MNF_set = (K.MNF_set).copy()
+    for i in range(K.m,v,-1):
+        for j in range(len(new_MNF_set)):
+            for l in range(len(new_MNF_set[j])):
+                if new_MNF_set[j][l]==i:
+                    new_MNF_set[j][l]+=1
+    for j in range(len(new_MNF_set)):
+        if v in new_MNF_set[j]:
+            new_MNF_set[j].append(v+1)
+    for new_MNF in new_MNF_set:
+        new_MNF.sort()
+    new_MNF_set.sort()
+    return PureSimplicialComplex([],new_MNF_set,K.m+1)
 
+def multiple_wedge(K,J):
+    if len(J) != K.m:
+        raise Exception
+    nbr_of_wedges = 0
+    for v in range(K.m):
+        for k in range(J[v]):
+            K = wedge(K,v+1+nbr_of_wedges)
+        nbr_of_wedges += J[v]
+    return K
 
 def are_isom(K1 ,K2):
     if K1.n != K2.n or K1.m != K2.m or len(K1.facets_bin) != len(K2.facets_bin):
@@ -634,6 +662,7 @@ def Hyuntae_algo(pile, candidate_facets_ref, results, aimed_m):
 
 def Garrison_Scott(K):
     K.create_FP()
+    counter = 0
     list_char_funct = []
     '''we create all the non zero elements of Z_2^n'''
     list_2_pow = [1]
@@ -653,6 +682,7 @@ def Garrison_Scott(K):
     for k in range(K.n, K.m):
         current_lambda.append(0)
     while i >= K.n:
+        counter+=1
         list_S[K.n - i] = list(range(1, list_2_pow[K.n]))
         for face_bin in K_full_FP:
             if (face_bin < list_2_pow[i + 1]) and ((face_bin | list_2_pow[i]) == face_bin):
@@ -676,6 +706,7 @@ def Garrison_Scott(K):
             else:
                 i+=1
                 break
+    print(counter)
     return list_char_funct
 
 
@@ -686,6 +717,7 @@ def IDCM_Garrison_Scott(K):
     p = K.Pic
     full_face = list_2_pow[m]-1
     max_faces = []
+    counter = 0
     for face in K.facets_bin:
         max_faces.append(face^full_face)
     #We create a simplicial complex having its maximal faces represented by the cofacets of K
@@ -711,6 +743,7 @@ def IDCM_Garrison_Scott(K):
         list_condition_i[k] = sum
     i=n-1
     while i<n:
+        counter+=1
         list_S[i] = S.copy()
         for c in current_IDCM[i+1:]:
             list_S[i].remove(c)
@@ -736,6 +769,7 @@ def IDCM_Garrison_Scott(K):
             else:
                 i-=1
                 break
+    print(counter)
     return list_results
 
 def int_to_bin_array(x, k):
