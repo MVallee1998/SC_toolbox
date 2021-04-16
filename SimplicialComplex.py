@@ -1,16 +1,15 @@
-import numpy.polynomial as npp
-import binary_search_tree as bst
-from itertools import combinations, permutations
-import Betti_numbers as bnbr
-import numpy as np
-import sys
-import Z2_linear_algebra as Z2la
 import json
-import collections as coll
+from itertools import combinations, permutations
+
+import numpy as np
+import numpy.polynomial as npp
+
+import Betti_numbers as bnbr
+import Z2_linear_algebra as Z2la
 
 # sys.setrecursionlimit(1000)
 
-G_vector = [2,6,10,20,30,50,70,105,140,196,252]
+G_vector = [2, 6, 10, 20, 30, 50, 70, 105, 140, 196, 252]
 list_2_pow = [1]
 for k in range(16):
     list_2_pow.append(list_2_pow[-1] * 2)
@@ -24,11 +23,7 @@ def face_to_binary(face, m):
 
 
 def binary_to_face(x, m):
-    result = []
-    for k in range(m):
-        if list_2_pow[k] | x == x:
-            result.append(k + 1)
-    return result
+    return [k+1 for k in range(m) if list_2_pow[k] | x == x]
 
 
 class PureSimplicialComplex:
@@ -102,12 +97,11 @@ class PureSimplicialComplex:
                 self.facets.sort()
         self.Pic = self.m - self.n
 
-
     def create_FP(self):
         if self.facets_bin and not self.FP_bin:
             self.FP_bin = [dict() for i in range(self.n)]
             for facet_bin in self.facets_bin:
-                self.FP_bin[len(binary_to_face(facet_bin,self.m))-1][facet_bin] = []
+                self.FP_bin[len(binary_to_face(facet_bin, self.m)) - 1][facet_bin] = []
             # self.FP_bin[-1] = dict.fromkeys(self.facets_bin, [])
             for k in range(self.n - 2, -1, -1):
                 for face in self.FP_bin[k + 1]:
@@ -166,6 +160,7 @@ class PureSimplicialComplex:
         self.g_vector = []
         for i in range(1, int(self.n / 2) + 1):
             self.g_vector.append(self.h_vector[i] - self.h_vector[i - 1])
+
     def compute_NF_set(self):
         if not self.NF_set_bin:
             self.create_FP()
@@ -182,7 +177,6 @@ class PureSimplicialComplex:
                             if subface not in self.FP_bin[k] and subface not in all_non_faces[k]:
                                 all_non_faces[k][subface] = True
             self.NF_set_bin = all_non_faces.copy()
-
 
     def compute_MNF_set(self):
         if not self.MNF_set_bin:
@@ -207,7 +201,7 @@ class PureSimplicialComplex:
         if not self.MNF_set:
             self.MNF_set = []
             for MNF_bin in self.MNF_set_bin:
-                self.MNF_set.append(binary_to_face(MNF_bin,self.m))
+                self.MNF_set.append(binary_to_face(MNF_bin, self.m))
             self.MNF_set.sort()
 
     def compute_facets_from_MNF_set(self):  # TO CHANGE
@@ -215,7 +209,7 @@ class PureSimplicialComplex:
         candidate_facets_iter = combinations(M, self.n)
         candidate_facets = []
         for facet_iter in candidate_facets_iter:
-            candidate_facets.append(sum([list_2_pow[k-1] for k in facet_iter]))
+            candidate_facets.append(sum([list_2_pow[k - 1] for k in facet_iter]))
         self.facets_bin = []
         for facet in candidate_facets:
             is_a_facet = True
@@ -273,7 +267,7 @@ class PureSimplicialComplex:
         self.create_FP()
         if self.closed_faces == None:
             self.closed_faces = []
-            for k in range(self.n-2):
+            for k in range(self.n - 2):
                 for face in self.FP_bin[k]:
                     if self.is_closed(face):
                         self.closed_faces.append(face)
@@ -387,7 +381,7 @@ class PureSimplicialComplex:
 
     def find_minimal_lexico_order(self, dictionary=None):
         closed_vertices = []
-        to_add_to_dict=[]
+        to_add_to_dict = []
         for v in range(self.m):
             if self.is_closed(list_2_pow[v]):
                 closed_vertices.append(v)
@@ -418,7 +412,7 @@ class PureSimplicialComplex:
                                     to_add_to_dict.append(relabeled_facets)
                             if relabeled_facets < minimal_facets_bin:
                                 minimal_facets_bin = relabeled_facets.copy()
-        if dictionary!= None:
+        if dictionary != None:
             for relabeled_facets in to_add_to_dict:
                 dictionary[json.dumps(relabeled_facets)] = False
             dictionary[json.dumps(minimal_facets_bin)] = True
@@ -432,43 +426,45 @@ class PureSimplicialComplex:
         for edge_bin in list_all_edges:
             is_pair = True
             for MNF_bin in self.MNF_set_bin:
-                if MNF_bin & edge_bin in list_2_pow: #10 or 01 at the positions of the vertices of the edge
+                if MNF_bin & edge_bin in list_2_pow:  # 10 or 01 at the positions of the vertices of the edge
                     is_pair = False
             if is_pair and edge_bin not in self.MNF_set_bin:
                 return False
         return True
 
-def wedge(K,v):
-    if v>K.m or v<0:
+
+def wedge(K, v):
+    if v > K.m or v < 0:
         raise Exception
     K.compute_MNF_set()
-    print(K.MNF_set)
     K.MNF_bin_to_MNF()
     new_MNF_set = (K.MNF_set).copy()
-    for i in range(K.m,v,-1):
+    for i in range(K.m, v, -1):
         for j in range(len(new_MNF_set)):
             for l in range(len(new_MNF_set[j])):
-                if new_MNF_set[j][l]==i:
-                    new_MNF_set[j][l]+=1
+                if new_MNF_set[j][l] == i:
+                    new_MNF_set[j][l] += 1
     for j in range(len(new_MNF_set)):
         if v in new_MNF_set[j]:
-            new_MNF_set[j].append(v+1)
+            new_MNF_set[j].append(v + 1)
     for new_MNF in new_MNF_set:
         new_MNF.sort()
     new_MNF_set.sort()
-    return PureSimplicialComplex([],new_MNF_set,K.m+1)
+    return PureSimplicialComplex([], new_MNF_set, K.m + 1)
 
-def multiple_wedge(K,J):
+
+def multiple_wedge(K, J):
     if len(J) != K.m:
         raise Exception
     nbr_of_wedges = 0
     for v in range(K.m):
         for k in range(J[v]):
-            K = wedge(K,v+1+nbr_of_wedges)
+            K = wedge(K, v + 1 + nbr_of_wedges)
         nbr_of_wedges += J[v]
     return K
 
-def are_isom(K1 ,K2):
+
+def are_isom(K1, K2):
     if K1.n != K2.n or K1.m != K2.m or len(K1.facets_bin) != len(K2.facets_bin):
         return False
     K1.compute_MNF_set()
@@ -482,16 +478,16 @@ def are_isom(K1 ,K2):
     if sizes_MNF_K1 != sizes_MNF_K2:
         return False
     list_seq_K1 = []
-    for vertex in range(1,K1.m+1):
+    for vertex in range(1, K1.m + 1):
         list_seq_K1.append(sorted([len(MNF) for MNF in K1.MNF_set if vertex in MNF]))
     list_seq_K2 = []
-    for vertex in range(1,K2.m+1):
+    for vertex in range(1, K2.m + 1):
         list_seq_K2.append(sorted([len(MNF) for MNF in K2.MNF_set if vertex in MNF]))
     if sorted(list_seq_K1) != sorted(list_seq_K2):
         return False
     types_dict_K1 = dict()
     for index_vertex in range(K1.m):
-        vertex = index_vertex+1
+        vertex = index_vertex + 1
         if json.dumps(list_seq_K1[index_vertex]) not in types_dict_K1:
             types_dict_K1[json.dumps(list_seq_K1[index_vertex])] = [vertex]
         else:
@@ -515,12 +511,12 @@ def are_isom(K1 ,K2):
     K1_labels = []
     for labels in list_bij_K1:
         K1_labels += labels
-    i=0
-    j=0
+    i = 0
+    j = 0
     current_relabelling = []
-    list_positions = [0]*len(permutations_relabelling)
-    while i>=0:
-        if i==len(permutations_relabelling):
+    list_positions = [0] * len(permutations_relabelling)
+    while i >= 0:
+        if i == len(permutations_relabelling):
             K2_labels = []
             for labels in current_relabelling:
                 K2_labels += labels
@@ -529,28 +525,24 @@ def are_isom(K1 ,K2):
             old_labels = [data[1] - 1 for data in help_bij]
             if (K1.MNF_set_bin == relabel_MNF(K2, old_labels)).all():
                 return True
-            if i!=0:
+            if i != 0:
                 current_relabelling.pop()
-            i-=1
-            list_positions[i] +=1
+            i -= 1
+            list_positions[i] += 1
             continue
         j = list_positions[i]
         if j == len(permutations_relabelling[i]):
             list_positions[i] = 0
-            if i!=0:
+            if i != 0:
                 current_relabelling.pop()
-            i-=1
-            list_positions[i] +=1
+            i -= 1
+            list_positions[i] += 1
             continue
         else:
             current_relabelling.append(permutations_relabelling[i][j])
             list_positions[i] = j
-            i+=1
+            i += 1
     return False
-
-
-
-
 
 
 def relabel_facets(K, old_labels):
@@ -564,6 +556,7 @@ def relabel_facets(K, old_labels):
                 new_facets[k] += list_2_pow[l]
     new_facets.sort()
     return new_facets
+
 
 def relabel_MNF(K, old_labels):
     if len(old_labels) != K.m:
@@ -642,12 +635,12 @@ def dichotomie(t, v):
 
 
 def Hyuntae_algo(pile, candidate_facets_ref, results, aimed_m):
-    if len(pile)>=1:
+    if len(pile) >= 1:
         K = pile.pop()
         if not K.is_closed():
-            if len(K.facets_bin) < G_vector[aimed_m-5]:
+            if len(K.facets_bin) < G_vector[aimed_m - 5]:
                 for face in candidate_facets_ref:
-                    if K.is_candidate(face,aimed_m):
+                    if K.is_candidate(face, aimed_m):
                         new_K = PureSimplicialComplex(K.facets_bin + [face])
                         if new_K.is_promising():
                             pile.append(new_K)
@@ -662,7 +655,6 @@ def Hyuntae_algo(pile, candidate_facets_ref, results, aimed_m):
 
 def Garrison_Scott(K):
     K.create_FP()
-    counter = 0
     list_char_funct = []
     '''we create all the non zero elements of Z_2^n'''
     list_2_pow = [1]
@@ -682,7 +674,6 @@ def Garrison_Scott(K):
     for k in range(K.n, K.m):
         current_lambda.append(0)
     while i >= K.n:
-        counter+=1
         list_S[K.n - i] = list(range(1, list_2_pow[K.n]))
         for face_bin in K_full_FP:
             if (face_bin < list_2_pow[i + 1]) and ((face_bin | list_2_pow[i]) == face_bin):
@@ -694,7 +685,9 @@ def Garrison_Scott(K):
                 index = dichotomie(list_S[K.n - i], linear_comb)
                 if index != -1:
                     list_S[K.n - i].pop(index)
-        while i>= K.n:
+                    if list_S[K.n - i] == []:
+                        break
+        while i >= K.n:
             if list_S[K.n - i] == []:
                 i -= 1
                 continue
@@ -704,9 +697,8 @@ def Garrison_Scott(K):
                 list_char_funct.append(current_lambda.copy())
                 continue
             else:
-                i+=1
+                i += 1
                 break
-    print(counter)
     return list_char_funct
 
 
@@ -715,51 +707,55 @@ def IDCM_Garrison_Scott(K):
     m = K.m
     n = K.n
     p = K.Pic
-    full_face = list_2_pow[m]-1
-    max_faces = [face^full_face for face in K.facets_bin]
-    #We create a simplicial complex having its maximal faces represented by the cofacets of K
+    full_face = list_2_pow[m] - 1
+    max_faces = [face ^ full_face for face in K.facets_bin]
+    # We create a simplicial complex having its maximal faces represented by the cofacets of K
     L = PureSimplicialComplex(max_faces)
     L.create_FP()
-    CF_full_set = [face for face in [L.FP_bin[k] for k in range(L.n)]]
+    CF_full_set = []
+    for k in range(L.n):
+        for face_bin in L.FP_bin[k]:
+            CF_full_set.append(face_bin)
     # The list CF_full_set represents all the sub-cofacets of K
-    current_IDCM = [0]*m
-    for k in range(n,m):
-        current_IDCM[k] = list_2_pow[k-n]
-    S = [k in range(1,list_2_pow[p])]
+    current_IDCM = [0] * m
+    for k in range(n, m):
+        current_IDCM[k] = list_2_pow[k - n]
+    S = [k for k in range(1, list_2_pow[p])]
     list_S = [S.copy() for k in range(m)]
     list_results = []
-    list_condition_i = [0]*m
+    list_condition_i = [0] * m
     sum = 0
-    for k in range(m-1,-1,-1):
-        sum+= list_2_pow[k]
+    for k in range(m - 1, -1, -1):
+        sum += list_2_pow[k]
         list_condition_i[k] = sum
-    i=n-1
-    while i<n:
-        counter+=1
+    i = n - 1
+    while i < n:
         list_S[i] = S.copy()
-        for c in current_IDCM[i+1:]:
+        for c in current_IDCM[i + 1:]:
             list_S[i].remove(c)
         for CF in CF_full_set:
             if CF | list_condition_i[i] == list_condition_i[i] and CF | list_2_pow[i] == CF:
-                list_indexes_CF = [j for j in range(m) if list_2_pow[j] | CF == CF and j!=i]
+                list_indexes_CF = [j for j in range(m) if list_2_pow[j] | CF == CF and j != i]
                 linear_comb = 0
                 for j in list_indexes_CF:
                     linear_comb ^= current_IDCM[j]
                 if linear_comb in list_S[i]:
                     list_S[i].remove(linear_comb)
-        while i<n:
-            if list_S[i]==[]:
-                i+=1
+                    if list_S[i] == []:
+                        break
+        while i < n:
+            if list_S[i] == []:
+                i += 1
                 continue
             current_IDCM[i] = list_S[i].pop()
-            if i==0:
+            if i == 0:
                 list_results.append(current_IDCM.copy())
                 continue
             else:
-                i-=1
+                i -= 1
                 break
-    print(counter)
     return list_results
+
 
 def int_to_bin_array(x, k):
     res = np.zeros(k)
@@ -774,7 +770,6 @@ def char_funct_array_to_bin(char_funct):
     np_list_2_pow = np.array(list_2_pow[:Pic])
     res = [np.sum(np_list_2_pow[v == 1]) for v in char_funct]
     return res
-
 
 
 def enumerate_char_funct_orbits(n, m):
@@ -831,7 +826,8 @@ def enumerate_all_lambdas(n, m):
         list_char_funct.append(char_funct)
     return list_char_funct
 
-def find_facets_compatible_with_lambda(char_function,m,n):
+
+def find_facets_compatible_with_lambda(char_function, m, n):
     Pic = m - n
     cofacets = []
     for cofacet_iter in combinations(range(1, m + 1), Pic):
@@ -845,6 +841,7 @@ def find_facets_compatible_with_lambda(char_function,m,n):
         facets.append((list_2_pow[m] - 1) ^ face_to_binary(cofacet, m))
     facets.sort()
     return facets
+
 
 def text(result):
     name = '/GL4'
@@ -886,8 +883,7 @@ def display_char_funct(char_funct, n):
     char_funct_array = np.zeros((n, len(char_funct)))
     for k in range(len(char_funct)):
         char_funct_array[:, k] = int_to_bin_array(char_funct[k], n)
-    print(char_funct_array[:,n:])
-
+    print(char_funct_array[:, n:])
 
 #
 # # print(K)
