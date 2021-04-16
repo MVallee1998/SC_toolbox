@@ -8,7 +8,8 @@ from multiprocessing import Pool
 
 G_vector = [2, 6, 10, 20, 30, 50, 70, 105, 140, 196, 252]
 
-
+np_arrange = np.arange(0,256)
+np_arrange_odd = 2*np.arange(0,127) + 1
 m = 10
 n = 6
 raw_results_PATH = 'tests/PLS_%d_%d' % (m, n)
@@ -41,11 +42,33 @@ def new_vect_to_mult_array(vector,size_index_array):
     return vect_to_mult_array
 
 
+def increment_vect(vect,size_kernel):
+    vect[0]+=1
+    k=0
+    index_maxi = size_kernel // 8 - 2
+    pow_maxi = size_kernel % 8
+    while k<=index_maxi and vect[k]==0:
+        k+=1
+        vect[k]+=1
+    if k == index_maxi and vect[k] == sc.list_2_pow[pow_maxi]:
+        return True
+    return False
+
+
+def new_vect_to_mult_array_1(vect,size_kernel):
+    combinations = np.array(np.meshgrid(np_arrange_odd, np_arrange,vect[0],vect[1],vect[2],vect[3],vect[4],vect[5]),dtype = np.uint8).T.reshape(-1,8)
+    result = np.unpackbits(combinations,axis=1,bitorder='little', count= size_kernel).T
+    if increment_vect(vect,size_kernel):
+        return result, False
+    return result, True
+
+
+
 # @nb.njit
 def get_product(M,A,vect_to_mult_array):
-    candidate_array = cp.mod(A.dot(vect_to_mult_array), 2)
+    candidate_array = A.dot(vect_to_mult_array) % 2
     prod = M.dot(candidate_array)
-    return cp.asnumpy(candidate_array), cp.asnumpy(prod)
+    return candidate_array, prod
 
 
 
@@ -57,19 +80,23 @@ def f(char_funct):
     M_cp = cp.asarray(M)
     nbr_results = list_v.shape[0]
     print(nbr_results)
-    np_facets = np.array(facets)
+    np_facets = cp.array(facets)
     A = cp.asarray(np.transpose(list_v))
     vect_to_mult = np.zeros(nbr_results)
     results = []
-    vect_to_mult[0] = 1
-    while vect_to_mult.any()==1:
-        vect_to_mult_array = new_vect_to_mult_array(vect_to_mult, nbr_results)
+    vect = np.array(np.zeros((6,1)),dtype=np.uint8)
+    # vect_to_mult[0] = 1
+    # while vect_to_mult.any()==1:
+    keep_going = True
+    while keep_going:
+        # vect_to_mult_array = new_vect_to_mult_array(vect_to_mult, nbr_results)
+        vect_to_mult_array, keep_going = new_vect_to_mult_array_1(vect,nbr_results)
         candidate_array, prod = get_product(M_cp,A, cp.asarray(vect_to_mult_array))
         having_first_facet = candidate_array[0, :] == 1
-        verifying_G_theorem = np.sum(candidate_array, axis=0) <= G_vector[n - 1]
-        having_every_closed_ridges = np.logical_not((prod >= 4).any(axis=0))
-        good_candidates = candidate_array.T[
-            np.logical_and(np.logical_and(having_first_facet, verifying_G_theorem), having_every_closed_ridges)]
+        verifying_G_theorem = cp.sum(candidate_array, axis=0) <= G_vector[n - 1]
+        having_every_closed_ridges = cp.logical_not((prod >= 4).any(axis=0))
+        good_conditions = cp.logical_and(verifying_G_theorem, having_every_closed_ridges)
+        good_candidates = candidate_array.T[good_conditions]
         for good_candidate in good_candidates:
             good_candidate_facets = np_facets[good_candidate==1]
             good_candidate_facets_list = list(good_candidate_facets)

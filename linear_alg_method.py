@@ -15,7 +15,7 @@ def construct_matrix(facets):
                     ridges.append(ridge)
     ridges.sort()
     # print("Facets and ridges enumerated")
-    M = np.zeros((len(ridges), len(facets)),dtype=np.float)
+    M = np.zeros((len(ridges), len(facets)))
     for j in range(len(facets)):
         for element in sc.list_2_pow:
             if element | facets[j] == facets[j]:
@@ -88,7 +88,7 @@ def find_kernel(M):
     N = np.transpose(M).copy()
     i = 0
     j = 0
-    basis = np.eye(nbr_facets,dtype=np.float)
+    basis = np.eye(nbr_facets)
     while j < nbr_ridges and i < nbr_facets:
         if N[i, j] == 0:
             i_0 = -1
@@ -107,4 +107,12 @@ def find_kernel(M):
                 basis[i_iter] = (basis[i_iter] + basis[i]) % 2
         j += 1
         i += 1
+    result = basis[(N == 0).all(axis=1)]
+    where_one = np.where(result[:,0]==1)[0]
+    if where_one[0]!=0:
+        temp = result[:,0].copy()
+        result[:,0] = result[:,where_one[0]].copy()
+        result[:,where_one[0]] = temp
+    for k in where_one[1:]:
+        result[k] = np.mod(result[k] + result[0],2)
     return basis[(N == 0).all(axis=1)]
