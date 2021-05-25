@@ -110,9 +110,8 @@ def find_kernel(M):
     result = basis[(N == 0).all(axis=1)]
     where_one = np.where(result[:,0]==1)[0]
     if where_one[0]!=0:
-        temp = result[:,0].copy()
-        result[:,0] = result[:,where_one[0]].copy()
-        result[:,where_one[0]] = temp
+        result[[0,where_one[0]]] = result[[where_one[0],0]]
     for k in where_one[1:]:
-        result[k] = np.mod(result[k] + result[0],2)
-    return basis[(N == 0).all(axis=1)]
+        if k!=0:
+            result[k] = np.mod(result[k] + result[0],2)
+    return result

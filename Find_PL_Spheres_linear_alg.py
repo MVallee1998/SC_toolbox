@@ -10,9 +10,9 @@ G_vector = [2, 6, 10, 20, 30, 50, 70, 105, 140, 196, 252]
 
 np_arrange = np.arange(0,256)
 np_arrange_odd = 2*np.arange(0,127) + 1
-m = 10
-n = 6
-raw_results_PATH = 'tests/PLS_%d_%d' % (m, n)
+m = 11
+n = 7
+raw_results_PATH = 'raw_results/PLS_%d_%d' % (m, n)
 
 def text(results,path):
     t = open(path, mode='a', encoding='utf-8')
@@ -92,14 +92,13 @@ def f(char_funct):
         # vect_to_mult_array = new_vect_to_mult_array(vect_to_mult, nbr_results)
         vect_to_mult_array, keep_going = new_vect_to_mult_array_1(vect,nbr_results)
         candidate_array, prod = get_product(M_cp,A, cp.asarray(vect_to_mult_array))
-        having_first_facet = candidate_array[0, :] == 1
         verifying_G_theorem = cp.sum(candidate_array, axis=0) <= G_vector[n - 1]
         having_every_closed_ridges = cp.logical_not((prod >= 4).any(axis=0))
-        good_conditions = cp.logical_and(verifying_G_theorem, having_every_closed_ridges)
-        good_candidates = candidate_array.T[good_conditions]
+        good_conditions = cp.flatnonzero(cp.logical_and(verifying_G_theorem, having_every_closed_ridges))
+        good_candidates = candidate_array[:,good_conditions].T
         for good_candidate in good_candidates:
             good_candidate_facets = np_facets[good_candidate==1]
-            good_candidate_facets_list = list(good_candidate_facets)
+            good_candidate_facets_list = good_candidate_facets.tolist()
             results.append(good_candidate_facets_list)
             # K = sc.PureSimplicialComplex(good_candidate_facets_list)
             # text(good_candidate_facets_list,raw_results_PATH)
@@ -120,11 +119,12 @@ def f(char_funct):
 
 # if __name__ == '__main__':
 #     list_char_funct = sc.enumerate_char_funct_orbits(n, m)
-#     with Pool(processes=4) as pool:
+#     with Pool(processes=6) as pool:
 #         big_result = pool.imap(f, list_char_funct)
 #         for results in big_result:
 #             text(results,raw_results_PATH)
 
 list_char_funct = sc.enumerate_char_funct_orbits(n, m)
-for char_funct in list_char_funct[:3]:
+for char_funct in list_char_funct[:1]:
     results = f(char_funct)
+    text(results,raw_results_PATH)
