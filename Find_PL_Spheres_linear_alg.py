@@ -12,7 +12,7 @@ np_arrange = np.arange(0,256)
 np_arrange_odd = 2*np.arange(0,127) + 1
 m = 11
 n = 7
-raw_results_PATH = 'raw_results/PLS_%d_%d' % (m, n)
+raw_results_PATH = 'test_results/PLS_%d_%d' % (m, n)
 
 def text(results,path):
     t = open(path, mode='a', encoding='utf-8')
