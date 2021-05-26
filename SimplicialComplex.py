@@ -450,7 +450,7 @@ def wedge(K, v):
     for new_MNF in new_MNF_set:
         new_MNF.sort()
     new_MNF_set.sort()
-    return PureSimplicialComplex([], new_MNF_set, K.m + 1)
+    return PureSimplicialComplex([], new_MNF_set, K.n + 1)
 
 
 def multiple_wedge(K, J):
