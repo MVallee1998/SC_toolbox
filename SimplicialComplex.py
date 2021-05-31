@@ -30,7 +30,7 @@ class PureSimplicialComplex:
     def __init__(self, facets=None, MNF_set=None, n=0):
         self.m = 0
         self.n = n
-        self.facets = facets.copy()
+        self.facets = facets
         self.MNF_set = MNF_set
         self.NF_set_bin = None
         self.facets_bin = []
@@ -112,29 +112,6 @@ class PureSimplicialComplex:
                                 self.FP_bin[k][subface] = [face]
                             else:
                                 self.FP_bin[k][subface].append(face)
-
-            # self.FP_bin = [[] for i in range(self.n)]
-            # faces_set = [bst.Node() for k in range(self.n)]
-            # facet_data = [(facet, []) for facet in self.facets_bin]
-            # faces_set[-1].insertList(facet_data)
-            # for k in range(self.n - 2, -1, -1):  # dimension
-            #     faces = []
-            #     faces_set[k + 1].TreeToList(faces)
-            #     self.FP_bin[k + 1] = faces.copy()
-            #     for l in range(len(faces)):  # treat every face of dimension k
-            #         face = faces[l][0]
-            #         for element in list_2_pow[:self.m]:  # construct the (k-1)-subfaces
-            #             if element | face == face:
-            #                 subface = element ^ face
-            #                 faces_set[k].insert((subface, [l]))
-            # vertices = []
-            # faces_set[0].TreeToList(vertices)
-            # self.FP_bin[0] = vertices.copy()
-            # self.list_faces = []
-            # for k in range(self.n):
-            #     self.list_faces.append([])
-            #     for face_data in self.FP_bin[k]:
-            #         self.list_faces[-1].append(face_data[0])
 
     def create_f_vector(self):
         if not self.FP_bin:
@@ -438,30 +415,25 @@ def wedge(K, v):
         raise Exception
     K.compute_MNF_set()
     K.MNF_bin_to_MNF()
-    new_MNF_set = (K.MNF_set).copy()
-    for i in range(K.m, v, -1):
-        for j in range(len(new_MNF_set)):
-            for l in range(len(new_MNF_set[j])):
-                if new_MNF_set[j][l] == i:
-                    new_MNF_set[j][l] += 1
+    print(K.MNF_set)
+    new_MNF_set = K.MNF_set.copy()
     for j in range(len(new_MNF_set)):
-        if v in new_MNF_set[j]:
-            new_MNF_set[j].append(v + 1)
-    for new_MNF in new_MNF_set:
-        new_MNF.sort()
+        if v in K.MNF_set[j]:
+            new_MNF_set[j].append(K.m+1)
     new_MNF_set.sort()
     return PureSimplicialComplex([], new_MNF_set, K.n + 1)
 
 
 def multiple_wedge(K, J):
+    new_K = PureSimplicialComplex(K.facets_bin)
     if len(J) != K.m:
         raise Exception
     nbr_of_wedges = 0
     for v in range(K.m):
         for k in range(J[v]):
-            K = wedge(K, v + 1 + nbr_of_wedges)
+            new_K = wedge(new_K, v + 1 + nbr_of_wedges)
         nbr_of_wedges += J[v]
-    return K
+    return new_K
 
 
 def are_isom(K1, K2):
@@ -692,7 +664,6 @@ def Garrison_Scott(K):
                 i -= 1
                 continue
             current_lambda[i] = list_S[K.n - i].pop()
-
             if i + 1 == K.m:
                 list_char_funct.append(current_lambda.copy())
                 continue
