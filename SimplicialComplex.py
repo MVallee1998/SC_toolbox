@@ -23,18 +23,18 @@ def face_to_binary(face, m):
 
 
 def binary_to_face(x, m):
-    return [k+1 for k in range(m) if list_2_pow[k] | x == x]
+    return [k + 1 for k in range(m) if list_2_pow[k] | x == x]
 
 
 class PureSimplicialComplex:
-    def __init__(self, facets=None, MNF_set=None, n=0):
+    def __init__(self, facets=None, MNF_set=None, n=0, FP_bin=None):
         self.m = 0
         self.n = n
         self.facets = facets
         self.MNF_set = MNF_set
         self.NF_set_bin = None
         self.facets_bin = []
-        self.FP_bin = None
+        self.FP_bin = FP_bin
         self.MNF_set_bin = None
         self.f_vector = None
         self.h_vector = None
@@ -59,12 +59,15 @@ class PureSimplicialComplex:
                 self.m = 0
                 self.facets_bin = facets.copy()
                 self.facets_bin.sort()
-                last_facet = self.facets_bin[-1]
-                two_pow = 1
-                while last_facet % two_pow != last_facet:
-                    if two_pow | last_facet == last_facet:
-                        self.n += 1
-                    two_pow *= 2
+                for MF in self.facets_bin:
+                    test_n=0
+                    two_pow = 1
+                    while MF % two_pow != MF:
+                        if two_pow | MF == MF:
+                            test_n+= 1
+                        two_pow *= 2
+                    if test_n>=self.n:
+                        self.n = test_n
                 for element in list_2_pow:
                     label_used = False
                     for facet in self.facets_bin:
@@ -98,7 +101,9 @@ class PureSimplicialComplex:
         self.Pic = self.m - self.n
 
     def create_FP(self):
-        if self.facets_bin and not self.FP_bin:
+        if not self.facets_bin:
+            self.compute_facets_from_MNF_set()
+        if not self.FP_bin:
             self.FP_bin = [dict() for i in range(self.n)]
             for facet_bin in self.facets_bin:
                 self.FP_bin[len(binary_to_face(facet_bin, self.m)) - 1][facet_bin] = []
@@ -180,8 +185,9 @@ class PureSimplicialComplex:
             for MNF_bin in self.MNF_set_bin:
                 self.MNF_set.append(binary_to_face(MNF_bin, self.m))
             self.MNF_set.sort()
+            print(self.MNF_set)
 
-    def compute_facets_from_MNF_set(self):  # TO CHANGE
+    def compute_facets_from_MNF_set(self):
         M = range(1, self.m + 1)
         candidate_facets_iter = combinations(M, self.n)
         candidate_facets = []
@@ -196,6 +202,22 @@ class PureSimplicialComplex:
                     break
             if is_a_facet:
                 self.facets_bin.append(facet)
+        # if self.facets_bin[0] != list_2_pow[self.n]-1:
+        #     list_others = []
+        #     missed = 0
+        #     for v in range(self.m):
+        #         if list_2_pow[v] | self.facets_bin[0] != self.facets_bin[0]:
+        #     for v in range(self.n):
+        #         if list_2_pow[v] | self.facets_bin[0] != self.facets_bin[0]:
+        #             print("hello",v)
+        #             for l in range(len(self.facets_bin)):
+        #                 if (self.facets_bin[l]|list_2_pow[v]==self.facets_bin[l]) ^ (self.facets_bin[l]|list_2_pow[self.n+marker]==self.facets_bin[l]):
+        #                     print("hello1")
+        #                     modifier = (list_2_pow[v] + list_2_pow[self.n+marker])
+        #                     self.facets_bin[l] = modifier ^ self.facets_bin[l]
+        #             marker+=1
+        #     self.facets_bin.sort()
+        #     print(self.facets_bin)
 
     def binary_to_face(self, face_bin):
         face = []
@@ -415,11 +437,10 @@ def wedge(K, v):
         raise Exception
     K.compute_MNF_set()
     K.MNF_bin_to_MNF()
-    print(K.MNF_set)
     new_MNF_set = K.MNF_set.copy()
     for j in range(len(new_MNF_set)):
         if v in K.MNF_set[j]:
-            new_MNF_set[j].append(K.m+1)
+            new_MNF_set[j].append(K.m + 1)
     new_MNF_set.sort()
     return PureSimplicialComplex([], new_MNF_set, K.n + 1)
 
@@ -428,15 +449,15 @@ def multiple_wedge(K, J):
     new_K = PureSimplicialComplex(K.facets_bin)
     if len(J) != K.m:
         raise Exception
-    nbr_of_wedges = 0
     for v in range(K.m):
         for k in range(J[v]):
-            new_K = wedge(new_K, v + 1 + nbr_of_wedges)
-        nbr_of_wedges += J[v]
+            new_K = wedge(new_K, v + 1)
     return new_K
 
 
 def are_isom(K1, K2):
+    if K1.MNF_set == K2.MNF_set:
+        return True
     if K1.n != K2.n or K1.m != K2.m or len(K1.facets_bin) != len(K2.facets_bin):
         return False
     K1.compute_MNF_set()
@@ -639,12 +660,10 @@ def Garrison_Scott(K):
     for k in range(K.n):
         for face in K.FP_bin[k]:
             K_full_FP.append(face)
-    current_lambda = []
+    current_lambda = [0] * K.m
     i = K.n
     for k in range(K.n):
-        current_lambda.append(list_2_pow[k])
-    for k in range(K.n, K.m):
-        current_lambda.append(0)
+        current_lambda[k] = list_2_pow[k]
     while i >= K.n:
         list_S[K.n - i] = list(range(1, list_2_pow[K.n]))
         for face_bin in K_full_FP:
@@ -856,8 +875,39 @@ def display_char_funct(char_funct, n):
         char_funct_array[:, k] = int_to_bin_array(char_funct[k], n)
     print(char_funct_array[:, n:])
 
-#
-# # print(K)
-# print(K_sp.is_Z2_homology_sphere(),K_sp.is_promising(),K_sp.is_closed(),K_sp.is_minimal_lexico_order())
-#
-# print(Garrison_Scott(K_sp))
+def give_next_vect(vect, base):
+    index = 0
+    vect[index] = (vect[index] + 1) % base[index]
+    while index < vect.size - 1 and vect[index] == 0:
+        index += 1
+        vect[index] = (vect[index] + 1) % base[index]
+
+def find_Z4_homology(K, IDCM):
+    n = K.n
+    m = K.m
+    H = np.zeros(K.n+1)
+    list_gene_omega = np.array([IDCM[d] * list_2_pow[n] + list_2_pow[d] for d in range(n)],dtype = int)
+    vect = np.zeros(n)
+    list_omega = np.zeros(2**n,dtype=int)
+    for k in range(2**n):
+        list_omega[k] = np.sum(list_gene_omega[np.flatnonzero(vect)])
+        give_next_vect(vect, 2*np.ones(n))
+    list_H_omega = []
+    for omega in list_omega:
+        if omega == 0:
+            list_H_omega.append([])
+        else:
+            K_omega = PureSimplicialComplex([omega & facet_bin for facet_bin in K.facets_bin if omega & facet_bin != 0])
+            K_omega.Z2_Betti_numbers()
+            list_H_omega.append(K_omega.H)
+    for H_omega in list_H_omega:
+        print(H_omega)
+        if not H_omega:
+            H[0] += 1
+        else:
+            for i in range(len(H_omega)):
+                if i==0:
+                    H[i+1] += (H_omega[i]-1)
+                else:
+                    H[i+1] += H_omega[i]
+    return H
