@@ -202,11 +202,126 @@ def puzzle_algo(K, J):
     print(number_of_realizable_puzzle)
 
 
+
+
+def puzzle_algo_V2(K,J):
+    J_array = np.array(J)
+    p = K.Pic
+    n = K.n
+    m = K.m
+    list_IDCM_bin = sc.IDCM_Garrison_Scott(K)
+    list_IDCM = []
+    for IDCM_bin in list_IDCM_bin:
+        IDCM = np.zeros((m, p))
+        for i in range(m):
+            for j in range(p):
+                if list_2_pow[j] | IDCM_bin[i] == IDCM_bin[i]:
+                    IDCM[i, j] = 1
+        list_IDCM.append(IDCM.copy())
+    list_CM = []
+    ninja = 0
+    for IDCM in list_IDCM:
+        CM = np.zeros((n, m))
+        CM[:, :n] = np.eye(n)
+        CM[:, n:m] = IDCM[:n, :]
+        list_CM.append(CM.copy())
+        ninja+=1
+    number_IDCM = len(list_IDCM)
+    # constructing the prediagram
+    prediagram_colors = np.zeros((number_IDCM, number_IDCM, m))
+    prediagram_maps = np.zeros((number_IDCM, number_IDCM, p))
+    for k in range(number_IDCM):
+        prediagram_colors[k, k] = np.ones(m)
+    for i in range(number_IDCM):
+        for j in range(i + 1, number_IDCM):
+            sum_IDCM = np.mod(list_IDCM[i] + list_IDCM[j], 2)
+            non_zeros = np.flatnonzero((sum_IDCM == 1).any(axis=1))
+            unique_maps = np.unique(sum_IDCM[non_zeros], axis=0)
+            if (unique_maps.shape[0]) == 1:
+                phi = unique_maps[0]
+                vect_of_non_zeros = np.zeros(n)
+                vect_of_non_zeros[non_zeros] = 1
+                for k in range(m):
+                    if (list_CM[i][:, k] == vect_of_non_zeros).all():
+                        prediagram_maps[i, j] = phi.copy()
+                        prediagram_colors[i, j, k] = 1
+                        prediagram_maps[j, i] = phi.copy()
+                        prediagram_colors[j, i, k] = 1
+    nbr_vertices = np.prod(J_array+1)
+    array_vertices = np.zeros((nbr_vertices,m))
+    for k in range(1,nbr_vertices):
+        array_vertices[k] = array_vertices[k-1].copy()
+        give_next_vect(array_vertices[k],J_array+1)
+    array_depth = (np.count_nonzero(array_vertices,axis = 1))
+    list_indexes_depth = []
+    for depth in range(np.count_nonzero(J_array)+1):
+        list_indexes_depth.append(np.flatnonzero(array_depth==depth).tolist())
+    print(list_indexes_depth)
+    def construct_puzzle(depth, position, current_puzzle,list_puzzles):
+        if depth > np.count_nonzero(J_array):
+            list_puzzles.append(current_puzzle)
+        elif position == len(list_indexes_depth[depth]):
+            construct_puzzle(depth+1, 0, current_puzzle,list_puzzles)
+        else:
+            current_vertex = array_vertices[list_indexes_depth[depth][position]]
+            list_neighbours = []
+            # I find all the vertices adjacent to the current vertex whi has already their images fixed
+            for lower_depth in range(depth+1):
+                for index_other_vertex in list_indexes_depth[lower_depth]:
+                    if lower_depth<depth or index_other_vertex < list_indexes_depth[depth][position]:
+                        other_vertex = array_vertices[index_other_vertex]
+                        position_of_edge = np.flatnonzero(current_vertex - other_vertex)
+                        if position_of_edge.size == 1:
+                            list_neighbours.append((index_other_vertex,position_of_edge[0]))
+            marker_of_possible_IDCM = np.ones(number_IDCM)
+            for data_neighbour in list_neighbours:
+                index_neighbour , p = data_neighbour
+                neighbour_IDCM = current_puzzle[index_neighbour]
+                for data_neighbour2 in list_neighbours:
+                    index_neighbour2, q = data_neighbour2
+                    neighbour_IDCM2 = current_puzzle[index_neighbour2]
+                    if p!=q and (list_CM[neighbour_IDCM][:,p] == list_CM[neighbour_IDCM][:,q]).all() and  (list_CM[neighbour_IDCM2][:,p] == list_CM[neighbour_IDCM2][:,q]).all() and  (list_CM[neighbour_IDCM][:,p] == list_CM[neighbour_IDCM2][:,q]).all():
+                        opposite_corner_vertex = array_vertices[index_neighbour].copy()
+                        opposite_corner_vertex[q] = array_vertices[index_neighbour2][q]
+                        index_opposite_corner = -1
+                        for k in range(nbr_vertices):
+                            if (opposite_corner_vertex==array_vertices[k]).all():
+                                index_opposite_corner = k
+                                break
+                        opposite_corner_IDCM = current_puzzle[index_opposite_corner]
+                        mandatory_IDCM = np.mod(list_IDCM[opposite_corner_IDCM]+list_IDCM[neighbour_IDCM]+ list_IDCM[neighbour_IDCM2],2)
+                        index_mandatory_IDCM = -1
+                        for index_IDCM in range(len(list_IDCM)):
+                            if (list_IDCM[index_IDCM]==mandatory_IDCM).all():
+                                index_mandatory_IDCM = index_IDCM
+                                break
+                        marker_mandatory_IDCM = np.zeros(number_IDCM)
+                        if index_mandatory_IDCM>=0:
+                            marker_mandatory_IDCM[index_mandatory_IDCM] = 1
+                        marker_of_possible_IDCM = np.multiply(marker_of_possible_IDCM,marker_mandatory_IDCM)
+                        if np.count_nonzero(marker_of_possible_IDCM) == 0:
+                            break
+                marker_of_possible_IDCM = np.multiply(marker_of_possible_IDCM, prediagram_colors[:,neighbour_IDCM,p])
+                if np.count_nonzero(marker_of_possible_IDCM) == 0:
+                    break
+            indexes_possible_IDCM = np.flatnonzero(marker_of_possible_IDCM)
+            if indexes_possible_IDCM.size != 0:
+                for index_IDCM in indexes_possible_IDCM:
+                    new_puzzle = current_puzzle.copy()
+                    new_puzzle[list_indexes_depth[depth][position]] = index_IDCM
+                    construct_puzzle(depth,position+1,new_puzzle,list_puzzles)
+    original_puzzle = -1*np.ones(nbr_vertices,dtype = int)
+    final_list_puzzles = []
+    construct_puzzle(0,0,original_puzzle,final_list_puzzles)
+    print(len(final_list_puzzles))
+
+
+
+
 K = sc.PureSimplicialComplex([[1, 2], [1, 6], [2, 3], [3, 4], [4, 5], [5, 6]])
-print("nbr1")
-puzzle_algo(K, [1, 0, 0, 0, 0, 1])
-# print("nbr2")
-# puzzle_algo(K, [1, 1, 0, 0, 0, 0])
+puzzle_algo_V2(K, [1, 1, 0, 0, 0, 0])
+# # print("nbr2")
+# # puzzle_algo(K, [1, 1, 0, 0, 0, 0])
 wedged_K1 = sc.multiple_wedge(K, [1, 1 ,0, 0, 0, 0])
 print(len(sc.Garrison_Scott(wedged_K1)))
 
