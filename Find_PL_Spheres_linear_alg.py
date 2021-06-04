@@ -10,8 +10,8 @@ G_vector = [2, 6, 10, 20, 30, 50, 70, 105, 140, 196, 252]
 
 np_arrange = np.arange(0,256)
 np_arrange_odd = 2*np.arange(0,127) + 1
-m = 11
-n = 7
+m = 12
+n = 8
 raw_results_PATH = 'test_results/PLS_%d_%d' % (m, n)
 
 def text(results,path):
@@ -118,13 +118,13 @@ def f(char_funct):
 
 
 # if __name__ == '__main__':
-#     list_char_funct = sc.enumerate_char_funct_orbits(n, m)
+#     list_char_funct = sc.enumerate_char_funct_orbits(n, m)[:6]
 #     with Pool(processes=6) as pool:
 #         big_result = pool.imap(f, list_char_funct)
 #         for results in big_result:
 #             text(results,raw_results_PATH)
 
 list_char_funct = sc.enumerate_char_funct_orbits(n, m)
-for char_funct in list_char_funct[:1]:
+for char_funct in list_char_funct:
     results = f(char_funct)
     text(results,raw_results_PATH)
