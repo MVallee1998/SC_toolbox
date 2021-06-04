@@ -4,6 +4,8 @@ import numpy as np
 import cupy as cp
 import SimplicialComplex as sc
 import numba as nb
+from itertools import combinations, permutations
+import cupyx as cpx
 from multiprocessing import Pool
 
 G_vector = [2, 6, 10, 20, 30, 50, 70, 105, 140, 196, 252]
@@ -70,16 +72,77 @@ def get_product(M,A,vect_to_mult_array):
     prod = M.dot(candidate_array)
     return candidate_array, prod
 
+def Gauss(M):
+    N = M.copy()
+    a,b = M.shape
+    i = 0
+    j = 0
+    while i<a and j<b:
+        if N[i,j]==0:
+            i_0 = -1
+            for i_iter in range(i+1,a):
+                if N[i_iter,j] == 1:
+                    i_0 = i_iter
+                    break
+            if i_0 == -1:
+                j+=1
+                continue
+            N[[i_0, i]] = N[[i, i_0]]
+        for i_iter in range(0,i):
+            N[i_iter] = (N[i_iter] + N[i]*N[i_iter,j]) % 2
+        for i_iter in range(i + 1, a):
+            if N[i_iter, j] == 1:
+                N[i_iter] = (N[i_iter] + N[i]) % 2
+        j += 1
+        i += 1
+    return(N)
+
+def reduce_wrt_columns(M,array_columns,starting_row):
+    N = M.copy()
+    a,c = M.shape
+    b = array_columns.size
+    i = starting_row
+    j = 0
+    while i<a and j<b:
+        if N[i,array_columns[j]]==0:
+            i_0 = -1
+            for i_iter in range(i+1,a):
+                if N[i_iter,array_columns[j]] == 1:
+                    i_0 = i_iter
+                    break
+            if i_0 == -1:
+                j+=1
+                continue
+            N[[i_0, i]] = N[[i, i_0]]
+        for i_iter in range(i):
+            N[i_iter] = (N[i_iter] + N[i]*N[i_iter,array_columns[j]]) % 2
+        for i_iter in range(i + 1, a):
+            N[i_iter] = (N[i_iter] + N[i]*N[i_iter, array_columns[j]]) % 2
+        j += 1
+        i += 1
+    return(N)
+
+
+def rank(M):
+    return(np.count_nonzero(np.sum(Gauss(M),axis=1)))
+
+def give_next_vect(vect, base):
+    index = 0
+    vect[index] = (vect[index] + 1) % base[index]
+    while index < vect.size - 1 and vect[index] == 0:
+        index += 1
+        vect[index] = (vect[index] + 1) % base[index]
 
 
 def f(char_funct):
     start = timeit.default_timer()
     facets = sc.find_facets_compatible_with_lambda(char_funct,m,n)
     M = lam.construct_matrix(facets)
-    list_v = lam.find_kernel(M)
     M_cp = cp.asarray(M)
+    list_v = lam.find_kernel(M)
     nbr_results = list_v.shape[0]
     print(nbr_results)
+    print(M.shape)
     np_facets = cp.array(facets)
     A = cp.asarray(np.transpose(list_v))
     vect_to_mult = np.zeros(nbr_results)
@@ -94,27 +157,122 @@ def f(char_funct):
         candidate_array, prod = get_product(M_cp,A, cp.asarray(vect_to_mult_array))
         verifying_G_theorem = cp.sum(candidate_array, axis=0) <= G_vector[n - 1]
         having_every_closed_ridges = cp.logical_not((prod >= 4).any(axis=0))
-        good_conditions = cp.flatnonzero(cp.logical_and(verifying_G_theorem, having_every_closed_ridges))
-        good_candidates = candidate_array[:,good_conditions].T
-        for good_candidate in good_candidates:
-            good_candidate_facets = np_facets[good_candidate==1]
-            good_candidate_facets_list = good_candidate_facets.tolist()
-            results.append(good_candidate_facets_list)
-            # K = sc.PureSimplicialComplex(good_candidate_facets_list)
-            # text(good_candidate_facets_list,raw_results_PATH)
+        both_condition = cp.logical_and(verifying_G_theorem, having_every_closed_ridges)
+        if cp.sum(both_condition):
+            i=1
+            good_conditions = cp.flatnonzero(both_condition)
+            good_candidates = candidate_array[:,good_conditions].T
+            for good_candidate in good_candidates:
+                good_candidate_facets = np_facets[good_candidate==1]
+                good_candidate_facets_list = good_candidate_facets.tolist()
+                results.append(good_candidate_facets_list)
+                # K = sc.PureSimplicialComplex(good_candidate_facets_list)
+                # text(good_candidate_facets_list,raw_results_PATH)
     stop = timeit.default_timer()
     print("Time spent: ", stop - start)
     print("number of results", len(results))
     return results
 
 
-# index_array = np.zeros(5)
-# index_array[0] = 1
-# vect_to_mult_array = new_vect_to_mult_array(index_array,5)
-# print(vect_to_mult_array)
-# for k in range(10):
-#     print(vect_to_mult_array)
-#     vect_to_mult_array = new_vect_to_mult_array(index_array, 5)
+def new_f(char_funct):
+    start = timeit.default_timer()
+    facets = sc.find_facets_compatible_with_lambda(char_funct,m,n)
+    M = lam.construct_matrix(facets)
+    M_cp = cp.asarray(M)
+    list_v = lam.find_kernel(M)
+    list_v_new = Gauss(list_v)
+    nbr_results = list_v.shape[0]
+    print(nbr_results)
+    print(M.shape)
+    #The idea is to reorganize the generators so some subset of them cannot be added together
+    list_not_together = M[np.sum(M,axis = 1)==5]
+    sum_of_not_together = np.zeros(M.shape[1])
+    list_distinct_not_together = []
+    starting_row = 1
+    list_gener_not_together = []
+    find_new_one= True
+    while find_new_one:
+        find_new_one = False
+        for not_together in list_not_together:
+            index_not_together = np.flatnonzero(not_together)
+            if np.count_nonzero(np.multiply(not_together,sum_of_not_together))==0 and rank(list_v_new[starting_row:,index_not_together]) == index_not_together.size -1:
+                sum_of_not_together+=not_together
+                list_v_new = reduce_wrt_columns(list_v_new,index_not_together,starting_row)
+                list_gener_not_together.append(list(range(starting_row,starting_row+index_not_together.size-1)))
+                starting_row+=index_not_together.size-1
+                list_distinct_not_together.append(not_together.copy())
+                find_new_one = True
+                break
+    list_not_together = M[np.sum(M,axis = 1)==4]
+    find_new_one= True
+    while find_new_one:
+        find_new_one = False
+        for not_together in list_not_together:
+            index_not_together = np.flatnonzero(not_together)
+            if np.count_nonzero(np.multiply(not_together,sum_of_not_together))==0 and rank(list_v_new[starting_row:,index_not_together]) == index_not_together.size -1:
+                sum_of_not_together+=not_together
+                list_v_new = reduce_wrt_columns(list_v_new,index_not_together,starting_row)
+                list_gener_not_together.append(list(range(starting_row,starting_row+index_not_together.size-1)))
+                starting_row+=index_not_together.size-1
+                list_distinct_not_together.append(not_together.copy())
+                find_new_one = True
+                break
+    for k in range(starting_row,nbr_results):
+        list_gener_not_together.append([k])
+    list_to_pick_lin_comb = []
+    array_number_lines = np.zeros(len(list_gener_not_together),dtype=int)
+    number_cases = 1
+    for index in range(len(list_gener_not_together)):
+        not_together = list_gener_not_together[index]
+        if len(not_together)==1:
+            nbr_lines = 2
+        elif len(not_together)==3:
+            nbr_lines = 7
+        else:
+            nbr_lines = 11
+        array_number_lines[index] = nbr_lines
+        list_to_pick_lin_comb.append(np.zeros((nbr_lines,nbr_results)))
+        current_line=1
+        for k in range(1,3):
+            for iter_combi in combinations(not_together,k):
+                list_to_pick_lin_comb[-1][current_line,iter_combi] = 1
+                current_line+=1
+        number_cases*=nbr_lines
+    base_vect_to_mult_array = np.zeros((np.prod(array_number_lines[:4]),nbr_results))
+    base_vect_to_mult_array[:,0] = 1
+    vect = np.zeros(4,dtype=int)
+    for k in range(1,(np.prod(array_number_lines[:4]))):
+        give_next_vect(vect,array_number_lines[:4])
+        for l in range(4):
+            base_vect_to_mult_array[k] += list_to_pick_lin_comb[l][vect[l],:]
+    np_facets = cp.array(facets)
+    A = cp.asarray(np.transpose(list_v))
+    results = []
+    vect = np.zeros(len(array_number_lines)-4,dtype=int)
+    keep_going = True
+    while keep_going:
+        vect_to_mult_array = base_vect_to_mult_array.copy()
+        for l in range(4,4+vect.size):
+            vect_to_mult_array += list_to_pick_lin_comb[l][vect[l-4]]
+        candidate_array, prod = get_product(M_cp,A, cp.asarray(vect_to_mult_array.T))
+        verifying_G_theorem = cp.sum(candidate_array, axis=0) <= G_vector[n - 1]
+        having_every_closed_ridges = cp.logical_not((prod >= 4).any(axis=0))
+        both_condition = cp.logical_and(verifying_G_theorem, having_every_closed_ridges)
+        if cp.sum(both_condition):
+            good_conditions = cp.flatnonzero(both_condition)
+            good_candidates = candidate_array[:,good_conditions].T
+            for good_candidate in good_candidates:
+                good_candidate_facets = np_facets[good_candidate==1]
+                good_candidate_facets_list = good_candidate_facets.tolist()
+                results.append(good_candidate_facets_list)
+            # K = sc.PureSimplicialComplex(good_candidate_facets_list)
+            # text(good_candidate_facets_list,raw_results_PATH)
+        give_next_vect(vect,array_number_lines[5:])
+        keep_going = np.count_nonzero(vect)>0
+    stop = timeit.default_timer()
+    print("Time spent: ", stop - start)
+    print("number of results", len(results))
+    return results
 
 
 # if __name__ == '__main__':
@@ -126,5 +284,5 @@ def f(char_funct):
 
 list_char_funct = sc.enumerate_char_funct_orbits(n, m)
 for char_funct in list_char_funct[:1]:
-    results = f(char_funct)
-    text(results,raw_results_PATH)
+    results = new_f(char_funct)
+    # text(results,raw_results_PATH)
