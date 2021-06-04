@@ -12,9 +12,9 @@ G_vector = [2, 6, 10, 20, 30, 50, 70, 105, 140, 196, 252]
 
 np_arrange = np.arange(0,256)
 np_arrange_odd = 2*np.arange(0,127) + 1
-m = 11
-n = 7
-raw_results_PATH = 'test_results/PLS_%d_%d' % (m, n)
+m = 10
+n = 6
+raw_results_PATH = 'raw_results/PLS_%d_%d' % (m, n)
 
 def text(results,path):
     t = open(path, mode='a', encoding='utf-8')
@@ -159,7 +159,6 @@ def f(char_funct):
         having_every_closed_ridges = cp.logical_not((prod >= 4).any(axis=0))
         both_condition = cp.logical_and(verifying_G_theorem, having_every_closed_ridges)
         if cp.sum(both_condition):
-            i=1
             good_conditions = cp.flatnonzero(both_condition)
             good_candidates = candidate_array[:,good_conditions].T
             for good_candidate in good_candidates:
@@ -235,21 +234,22 @@ def new_f(char_funct):
         current_line=1
         for k in range(1,3):
             for iter_combi in combinations(not_together,k):
-                list_to_pick_lin_comb[-1][current_line,iter_combi] = 1
+                list_to_pick_lin_comb[-1][current_line,list(iter_combi)] = 1
                 current_line+=1
         number_cases*=nbr_lines
     base_vect_to_mult_array = np.zeros((np.prod(array_number_lines[:4]),nbr_results))
     base_vect_to_mult_array[:,0] = 1
     vect = np.zeros(4,dtype=int)
-    for k in range(1,(np.prod(array_number_lines[:4]))):
+    for k in range(1,np.prod(array_number_lines[:4])):
         give_next_vect(vect,array_number_lines[:4])
         for l in range(4):
             base_vect_to_mult_array[k] += list_to_pick_lin_comb[l][vect[l],:]
     np_facets = cp.array(facets)
-    A = cp.asarray(np.transpose(list_v))
+    A = cp.asarray(np.transpose(list_v_new))
     results = []
     vect = np.zeros(len(array_number_lines)-4,dtype=int)
     keep_going = True
+    print(list_v_new[:,0])
     while keep_going:
         vect_to_mult_array = base_vect_to_mult_array.copy()
         for l in range(4,4+vect.size):
@@ -258,16 +258,15 @@ def new_f(char_funct):
         verifying_G_theorem = cp.sum(candidate_array, axis=0) <= G_vector[n - 1]
         having_every_closed_ridges = cp.logical_not((prod >= 4).any(axis=0))
         both_condition = cp.logical_and(verifying_G_theorem, having_every_closed_ridges)
-        if cp.sum(both_condition):
-            good_conditions = cp.flatnonzero(both_condition)
-            good_candidates = candidate_array[:,good_conditions].T
-            for good_candidate in good_candidates:
-                good_candidate_facets = np_facets[good_candidate==1]
-                good_candidate_facets_list = good_candidate_facets.tolist()
-                results.append(good_candidate_facets_list)
+        good_conditions = cp.flatnonzero(both_condition)
+        good_candidates = candidate_array[:,good_conditions].T
+        for good_candidate in good_candidates:
+            good_candidate_facets = np_facets[good_candidate==1]
+            good_candidate_facets_list = good_candidate_facets.tolist()
+            results.append(good_candidate_facets_list)
             # K = sc.PureSimplicialComplex(good_candidate_facets_list)
             # text(good_candidate_facets_list,raw_results_PATH)
-        give_next_vect(vect,array_number_lines[5:])
+        give_next_vect(vect,array_number_lines[4:])
         keep_going = np.count_nonzero(vect)>0
     stop = timeit.default_timer()
     print("Time spent: ", stop - start)
@@ -283,6 +282,6 @@ def new_f(char_funct):
 #             text(results,raw_results_PATH)
 
 list_char_funct = sc.enumerate_char_funct_orbits(n, m)
-for char_funct in list_char_funct[:1]:
+for char_funct in list_char_funct[:2]:
     results = new_f(char_funct)
-    # text(results,raw_results_PATH)
+    text(results,raw_results_PATH)
