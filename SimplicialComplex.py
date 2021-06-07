@@ -185,7 +185,6 @@ class PureSimplicialComplex:
             for MNF_bin in self.MNF_set_bin:
                 self.MNF_set.append(binary_to_face(MNF_bin, self.m))
             self.MNF_set.sort()
-            print(self.MNF_set)
 
     def compute_facets_from_MNF_set(self):
         M = range(1, self.m + 1)
@@ -456,8 +455,6 @@ def multiple_wedge(K, J):
 
 
 def are_isom(K1, K2):
-    if K1.MNF_set == K2.MNF_set:
-        return True
     if K1.n != K2.n or K1.m != K2.m or len(K1.facets_bin) != len(K2.facets_bin):
         return False
     K1.compute_MNF_set()

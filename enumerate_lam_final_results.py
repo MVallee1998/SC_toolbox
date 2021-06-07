@@ -1,8 +1,8 @@
 import SimplicialComplex as sc
 import json
 import timeit
-m = 11
-n = 7
+m = 10
+n = 6
 
 raw_results_path = 'raw_results/PLS_%d_%d' % (m, n)
 final_results_path = 'final_results/PLS_%d_%d' % (m, n)
@@ -26,6 +26,7 @@ list_of_seeds = []
 counter = 0
 start_sub = timeit.default_timer()
 start = timeit.default_timer()
+
 for i in range(len(results)):
     counter+=1
     if counter % 1000 == 0:
@@ -34,46 +35,41 @@ for i in range(len(results)):
         start_sub = timeit.default_timer()
     facets = results[i]
     K = sc.PureSimplicialComplex(facets)
-    if K.Pic == 4 and K.is_a_seed() and K not in list_of_seeds:
+    if K.Pic == 4 and K.is_a_seed() and facets not in list_of_seeds:
         list_of_seeds.append(facets)
     del K
 stop = timeit.default_timer()
-print("Seeds selected.", " Time spent:", stop - start)
+print(len(list_of_seeds)," seeds selected.", " Time spent:", stop - start)
 
-list_of_good_seeds = []
-counter = 0
+good_seeds = []
 start = timeit.default_timer()
 start_sub = timeit.default_timer()
-for i in range(len(list_of_seeds)):
-    counter+=1
-    if counter % 100 == 0:
+N = len(list_of_seeds)
+for i in range(N):
+    K = sc.PureSimplicialComplex(list_of_seeds[i])
+    if i % 100 == 0:
         stop_sub = timeit.default_timer()
-        print("time spent for 100:", stop_sub - start_sub, " Percentage processed: ", counter / len(list_of_seeds) * 100, "%")
+        print("time spent for 100:", stop_sub - start_sub, " Percentage processed: ", i / N * 100, "%")
         start_sub = timeit.default_timer()
-    facets = list_of_seeds[i]
-    K = sc.PureSimplicialComplex(facets)
-    if K.Pic == 4 and K.is_promising() and K.is_Z2_homology_sphere() and K.is_closed():
-        list_of_good_seeds.append(facets)
-    del K
+    if K.is_promising() and K.is_Z2_homology_sphere() and K.is_closed():
+        good_seeds.append(K)
 stop = timeit.default_timer()
 print("Good seeds selected", " Time spent:", stop - start)
 
-N = len(list_of_good_seeds)
-list_final = []
-counter = 0
-counter_PLS = 0
-dictionary_ref = dict()
+
+
 start = timeit.default_timer()
 start_sub = timeit.default_timer()
 
-K1 = sc.PureSimplicialComplex(list_of_good_seeds[0])
+N = len(good_seeds)
+K1 = good_seeds[0]
 eq_classes = [K1]
 for i in range(1,N):
     if i%100 == 0:
         stop_sub = timeit.default_timer()
         print("Time spent for 100", stop_sub-start_sub,(i/N)*100,"%",len(eq_classes))
         start_sub = timeit.default_timer()
-    K2 = sc.PureSimplicialComplex(list_of_good_seeds[i])
+    K2 = good_seeds[i]
     is_isom = False
     for K1 in eq_classes:
         if sc.are_isom(K1,K2):
@@ -81,6 +77,10 @@ for i in range(1,N):
             break
     if not is_isom:
         eq_classes.append(K2)
+stop = timeit.default_timer()
+print(len(eq_classes)," isomorphic classes found", " Time spent:", stop - start)
+
+
 
 data_to_text = []
 for K in eq_classes:
