@@ -14,6 +14,7 @@ np_arrange = np.arange(0,256)
 np_arrange_odd = 2*np.arange(0,127) + 1
 m = 12
 n = 8
+number_steps = 4
 raw_results_PATH = 'raw_results/PLS_%d_%d' % (m, n)
 
 def text(results,path):
@@ -237,23 +238,23 @@ def new_f(char_funct):
                 list_to_pick_lin_comb[-1][current_line,list(iter_combi)] = 1
                 current_line+=1
         number_cases*=nbr_lines
-    base_vect_to_mult_array = np.zeros((np.prod(array_number_lines[:5]),nbr_results))
+    base_vect_to_mult_array = np.zeros((np.prod(array_number_lines[:number_steps]),nbr_results))
     base_vect_to_mult_array[:,0] = 1
     print(array_number_lines)
-    vect = np.zeros(5,dtype=int)
-    for k in range(1,np.prod(array_number_lines[:5])):
-        give_next_vect(vect,array_number_lines[:5])
-        for l in range(5):
+    vect = np.zeros(number_steps,dtype=int)
+    for k in range(1,np.prod(array_number_lines[:number_steps])):
+        give_next_vect(vect,array_number_lines[:number_steps])
+        for l in range(number_steps):
             base_vect_to_mult_array[k] += list_to_pick_lin_comb[l][vect[l],:]
     np_facets = cp.array(facets)
     A = cp.asarray(np.transpose(list_v_new))
     results = []
-    vect = np.zeros(len(array_number_lines)-5,dtype=int)
+    vect = np.zeros(len(array_number_lines)-number_steps,dtype=int)
     keep_going = True
     while keep_going:
         vect_to_mult_array = base_vect_to_mult_array.copy()
-        for l in range(5,5+vect.size):
-            vect_to_mult_array += list_to_pick_lin_comb[l][vect[l-5]]
+        for l in range(number_steps,number_steps+vect.size):
+            vect_to_mult_array += list_to_pick_lin_comb[l][vect[l-number_steps]]
         candidate_array, prod = get_product(M_cp,A, cp.asarray(vect_to_mult_array.T))
         verifying_G_theorem = cp.sum(candidate_array, axis=0) <= G_vector[n - 1]
         having_every_closed_ridges = cp.logical_not((prod >= 4).any(axis=0))
@@ -266,7 +267,7 @@ def new_f(char_funct):
             results.append(good_candidate_facets_list)
             # K = sc.PureSimplicialComplex(good_candidate_facets_list)
             # text(good_candidate_facets_list,raw_results_PATH)
-        give_next_vect(vect,array_number_lines[5:])
+        give_next_vect(vect,array_number_lines[number_steps:])
         keep_going = np.count_nonzero(vect)>0
     stop = timeit.default_timer()
     print("Time spent: ", stop - start)
