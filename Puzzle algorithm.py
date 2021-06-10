@@ -1,6 +1,7 @@
 import numpy as np
-
+import timeit
 import SimplicialComplex as sc
+import json
 
 list_2_pow = [1]
 for k in range(16):
@@ -210,6 +211,7 @@ def puzzle_algo_V2(K,J):
     n = K.n
     m = K.m
     list_IDCM_bin = sc.IDCM_Garrison_Scott(K)
+    print("number of IDCM: ", len(list_IDCM_bin))
     list_IDCM = []
     for IDCM_bin in list_IDCM_bin:
         IDCM = np.zeros((m, p))
@@ -256,7 +258,6 @@ def puzzle_algo_V2(K,J):
     list_indexes_depth = []
     for depth in range(np.count_nonzero(J_array)+1):
         list_indexes_depth.append(np.flatnonzero(array_depth==depth).tolist())
-    print(list_indexes_depth)
     def construct_puzzle(depth, position, current_puzzle,list_puzzles):
         if depth > np.count_nonzero(J_array):
             list_puzzles.append(current_puzzle)
@@ -274,10 +275,11 @@ def puzzle_algo_V2(K,J):
                         if position_of_edge.size == 1:
                             list_neighbours.append((index_other_vertex,position_of_edge[0]))
             marker_of_possible_IDCM = np.ones(number_IDCM)
-            for data_neighbour in list_neighbours:
+            for index_data_neighbour in range(len(list_neighbours)):
+                data_neighbour = list_neighbours[index_data_neighbour]
                 index_neighbour , p = data_neighbour
                 neighbour_IDCM = current_puzzle[index_neighbour]
-                for data_neighbour2 in list_neighbours:
+                for data_neighbour2 in list_neighbours[index_data_neighbour+1:]:
                     index_neighbour2, q = data_neighbour2
                     neighbour_IDCM2 = current_puzzle[index_neighbour2]
                     if p!=q and (list_CM[neighbour_IDCM][:,p] == list_CM[neighbour_IDCM][:,q]).all() and  (list_CM[neighbour_IDCM2][:,p] == list_CM[neighbour_IDCM2][:,q]).all() and  (list_CM[neighbour_IDCM][:,p] == list_CM[neighbour_IDCM2][:,q]).all():
@@ -313,23 +315,46 @@ def puzzle_algo_V2(K,J):
     original_puzzle = -1*np.ones(nbr_vertices,dtype = int)
     final_list_puzzles = []
     construct_puzzle(0,0,original_puzzle,final_list_puzzles)
-    print(len(final_list_puzzles))
+    return len(final_list_puzzles)
 
 
 
 
-K = sc.PureSimplicialComplex([[1, 2], [1, 6], [2, 3], [3, 4], [4, 5], [5, 6]])
-puzzle_algo_V2(K, [1, 1, 0, 0, 0, 0])
-# # print("nbr2")
-# # puzzle_algo(K, [1, 1, 0, 0, 0, 0])
-wedged_K1 = sc.multiple_wedge(K, [1, 1 ,0, 0, 0, 0])
-print(len(sc.Garrison_Scott(wedged_K1)))
+# K = sc.PureSimplicialComplex([[1, 2], [1, 6], [2, 3], [3, 4], [4, 5],[5,6]])
+# wedged_K1 = sc.multiple_wedge(K, [6,1 ,0, 0, 0,0])
+# print(wedged_K1.facets)
+# start = timeit.default_timer()
+# print(len(sc.Garrison_Scott(wedged_K1)))
+# stop = timeit.default_timer()
+# print("Time spent for GS: ", stop - start)
+# start = timeit.default_timer()
+# puzzle_algo_V2(K, [6, 1, 0, 0, 0,0])
+# stop = timeit.default_timer()
+# print("Time spent for puzzle: ", stop - start)
 
-# for n in range(2, 3):
-#     m = n + 4
-#     results = read_file('final_results_BAK/PLS_%d_%d' % (m, n))
-#     start = timeit.default_timer()
-#     for K_byte in results:
-#         K = sc.PureSimplicialComplex(json.loads(K_byte))
-#         puzzle_algo(K, [1,0,0,1,0,0])
-#         print(len(sc.Garrison_Scott(sc.multiple_wedge(K,[1,0,0,1,0,0]))))
+
+for n in range(5, 8):
+    m = n + 4
+    results = read_file('final_results_BAK/PLS_%d_%d' % (m, n))
+    start = timeit.default_timer()
+    bigger = 0
+    for K_byte in results:
+        K = sc.PureSimplicialComplex(json.loads(K_byte))
+        list_IDCM_bin = sc.IDCM_Garrison_Scott(K)
+        if len(list_IDCM_bin)>bigger:
+            bigger = len(list_IDCM_bin)
+            J = [0]*K.m
+            J[0] = 2
+            J[1]=1
+            J[3]=1
+            start = timeit.default_timer()
+            print(puzzle_algo_V2(K, J))
+            stop = timeit.default_timer()
+            print("Time spent for Puzzle: ", stop - start)
+            start = timeit.default_timer()
+            print(len(sc.Garrison_Scott(sc.multiple_wedge(K,J))))
+            stop = timeit.default_timer()
+            print("Time spent for GS: ", stop - start)
+
+
+
