@@ -283,6 +283,6 @@ def new_f(char_funct):
 #             text(results,raw_results_PATH)
 
 list_char_funct = sc.enumerate_char_funct_orbits(n, m)
-for char_funct in list_char_funct[3:]:
+for char_funct in list_char_funct[6:]:
     results = new_f(char_funct)
     text(results,raw_results_PATH)
