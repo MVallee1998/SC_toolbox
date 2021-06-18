@@ -436,21 +436,29 @@ def wedge(K, v):
         raise Exception
     K.compute_MNF_set()
     K.MNF_bin_to_MNF()
-    new_MNF_set = K.MNF_set.copy()
-    for j in range(len(new_MNF_set)):
-        if v in K.MNF_set[j]:
-            new_MNF_set[j].append(K.m + 1)
-    new_MNF_set.sort()
+    new_MNF_set = []
+    for MNF in K.MNF_set:
+        new_MNF_set.append([])
+        for vertex in MNF:
+            if vertex<v:
+                new_MNF_set[-1].append(vertex)
+            elif vertex == v:
+                new_MNF_set[-1].append(vertex)
+                new_MNF_set[-1].append(vertex+1)
+            else:
+                new_MNF_set[-1].append(vertex+1)
     return PureSimplicialComplex([], new_MNF_set, K.n + 1)
 
 
 def multiple_wedge(K, J):
     new_K = PureSimplicialComplex(K.facets_bin)
+    sum_wedge = 0
     if len(J) != K.m:
         raise Exception
     for v in range(K.m):
         for k in range(J[v]):
-            new_K = wedge(new_K, v + 1)
+            new_K = wedge(new_K, v + sum_wedge + 1)
+            sum_wedge+=1
     return new_K
 
 
@@ -644,6 +652,28 @@ def Hyuntae_algo(pile, candidate_facets_ref, results, aimed_m):
 
 
 def Garrison_Scott(K):
+    while K.facets[0]!= list(range(1,K.n+1)):
+        vertex_to_relabel = 0
+        image_of_vertex = 0
+        for i in range(1,K.n+1):
+            if K.facets[0][i-1] != i:
+                vertex_to_relabel = K.facets[0][i-1]
+                image_of_vertex = i
+                break
+        new_facets = []
+        for MF in K.facets:
+            new_facets.append([])
+            for vertex in MF:
+                if vertex == vertex_to_relabel:
+                    new_facets[-1].append(image_of_vertex)
+                elif vertex == image_of_vertex:
+                    new_facets[-1].append(vertex_to_relabel)
+                else:
+                    new_facets[-1].append(vertex)
+            new_facets[-1].sort()
+        new_facets.sort()
+        K = PureSimplicialComplex(new_facets)
+        print(K.facets[0])
     K.create_FP()
     list_char_funct = []
     '''we create all the non zero elements of Z_2^n'''
