@@ -12,10 +12,10 @@ G_vector = [2, 6, 10, 20, 30, 50, 70, 105, 140, 196, 252]
 
 np_arrange = np.arange(0,256)
 np_arrange_odd = 2*np.arange(0,127) + 1
-m = 6
-n = 2
+m = 13
+n = 9
 number_steps = 4
-raw_results_PATH = 'raw_results/PLS_%d_%d' % (m, n)
+raw_results_PATH = 'test_results/PLS_%d_%d' % (m, n)
 
 def text(results,path):
     t = open(path, mode='a', encoding='utf-8')
@@ -159,7 +159,8 @@ def f(char_funct):
         verifying_G_theorem = cp.sum(candidate_array, axis=0) <= G_vector[n - 1]
         having_every_closed_ridges = cp.logical_not((prod >= 4).any(axis=0))
         both_condition = cp.logical_and(verifying_G_theorem, having_every_closed_ridges)
-        if cp.sum(both_condition):
+
+        if both_condition.any():
             good_conditions = cp.flatnonzero(both_condition)
             good_candidates = candidate_array[:,good_conditions].T
             for good_candidate in good_candidates:
@@ -181,10 +182,7 @@ def new_f(char_funct):
     M_cp = cp.asarray(M)
     list_v = lam.find_kernel(M)
     list_v_new = Gauss(list_v)
-    print(list_v_new)
     nbr_results = list_v.shape[0]
-    print(nbr_results)
-    print(M.shape)
     #The idea is to reorganize the generators so some subset of them cannot be added together
     list_not_together = M[np.sum(M,axis = 1)==5]
     sum_of_not_together = np.zeros(M.shape[1])
@@ -260,16 +258,17 @@ def new_f(char_funct):
         verifying_G_theorem = cp.sum(candidate_array, axis=0) <= G_vector[n - 1]
         having_every_closed_ridges = cp.logical_not((prod >= 4).any(axis=0))
         both_condition = cp.logical_and(verifying_G_theorem, having_every_closed_ridges)
-        good_conditions = cp.flatnonzero(both_condition)
-        good_candidates = candidate_array[:,good_conditions].T
-        for good_candidate in good_candidates:
-            good_candidate_facets = np_facets[good_candidate==1]
-            good_candidate_facets_list = good_candidate_facets.tolist()
-            results.append(good_candidate_facets_list)
-            # K = sc.PureSimplicialComplex(good_candidate_facets_list)
-            # text(good_candidate_facets_list,raw_results_PATH)
+        if both_condition.any():
+            good_conditions = cp.flatnonzero(both_condition)
+            good_candidates = candidate_array[:,good_conditions].T
+            for good_candidate in good_candidates:
+                good_candidate_facets = np_facets[good_candidate==1]
+                good_candidate_facets_list = good_candidate_facets.tolist()
+                results.append(good_candidate_facets_list)
+                # K = sc.PureSimplicialComplex(good_candidate_facets_list)
+                # text(good_candidate_facets_list,raw_results_PATH)
         give_next_vect(vect,array_number_lines[number_steps:])
-        keep_going = np.count_nonzero(vect)>0
+        keep_going = (vect>0).any()
     stop = timeit.default_timer()
     print("Time spent: ", stop - start)
     print("number of results", len(results))
@@ -284,6 +283,6 @@ def new_f(char_funct):
 #             text(results,raw_results_PATH)
 
 list_char_funct = sc.enumerate_char_funct_orbits(n, m)
-for char_funct in list_char_funct[6:]:
+for char_funct in list_char_funct:
     results = new_f(char_funct)
     # text(results,raw_results_PATH)
