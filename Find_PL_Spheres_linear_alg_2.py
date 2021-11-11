@@ -10,10 +10,10 @@ G_vector = [2, 6, 10, 20, 30, 50, 70, 105, 140, 196, 252]
 
 np_arrange = np.arange(0,256)
 np_arrange_odd = 2*np.arange(0,127) + 1
-m = 10
-n = 6
+m = 9
+n = 5
 number_steps = 4
-raw_results_PATH = 'raw_results/PLS_%d_%d_1' % (m, n)
+raw_results_PATH = 'raw_results/PLS_%d_%d_2' % (m, n)
 
 def text(results,path):
     t = open(path, mode='a', encoding='utf-8')
@@ -182,7 +182,7 @@ def new_f(char_funct):
     M_cp = cp.asarray(M)
     list_v = lam.find_kernel(M)
     list_v_new = Gauss(list_v)
-    # print(list_v_new)
+    print(list_v_new)
     nbr_results = list_v.shape[0]
     print(nbr_results)
     print(M.shape)
@@ -242,7 +242,6 @@ def new_f(char_funct):
         number_cases*=nbr_lines
     base_vect_to_mult_array = np.zeros((np.prod(array_number_lines[:number_steps]),nbr_results))
     base_vect_to_mult_array[:,0] = 1
-    print(array_number_lines)
     vect = np.zeros(number_steps,dtype=int)
     for k in range(1,np.prod(array_number_lines[:number_steps])):
         give_next_vect(vect,array_number_lines[:number_steps])
@@ -267,26 +266,13 @@ def new_f(char_funct):
             good_candidate_facets = np_facets[good_candidate==1]
             good_candidate_facets_list = good_candidate_facets.tolist()
             results.append(good_candidate_facets_list)
-            # K = sc.PureSimplicialComplex(good_candidate_facets_list)
-            # text(good_candidate_facets_list,raw_results_PATH)
         keep_going = give_next_vect(vect,array_number_lines[number_steps:])
     stop = timeit.default_timer()
     print("Time spent: ", stop - start)
     print("number of results", len(results))
     return results
 
-
-# if __name__ == '__main__':
-#     list_char_funct = sc.enumerate_char_funct_orbits(n, m)
-#     with Pool(processes=6) as pool:
-#         big_result = pool.imap(f, list_char_funct)
-#         for results in big_result:
-#             text(results,raw_results_PATH)
-
 list_char_funct = sc.enumerate_char_funct_orbits(n, m)
-global_start = timeit.default_timer()
 for char_funct in list_char_funct:
     results = new_f(char_funct)
-    # text(results,raw_results_PATH)
-global_end = timeit.default_timer()
-print("Total time spent", global_end - global_start)
+    text(results,raw_results_PATH)

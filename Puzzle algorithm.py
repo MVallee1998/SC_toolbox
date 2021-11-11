@@ -211,7 +211,7 @@ def puzzle_algo_V2(K,J):
     n = K.n
     m = K.m
     list_IDCM_bin = sc.IDCM_Garrison_Scott(K)
-    print("number of IDCM: ", len(list_IDCM_bin))
+    # print("number of IDCM: ", len(list_IDCM_bin))
     list_IDCM = []
     for IDCM_bin in list_IDCM_bin:
         IDCM = np.zeros((m, p))
@@ -315,7 +315,11 @@ def puzzle_algo_V2(K,J):
     original_puzzle = -1*np.ones(nbr_vertices,dtype = int)
     final_list_puzzles = []
     construct_puzzle(0,0,original_puzzle,final_list_puzzles)
-    return len(final_list_puzzles)
+    if len(final_list_puzzles)!= len(list_IDCM):
+        K.compute_MNF_set()
+        K.MNF_bin_to_MNF()
+        print("hello",K.MNF_set,len(final_list_puzzles), len(list_IDCM))
+    # return len(final_list_puzzles)
 
 
 
@@ -333,28 +337,30 @@ def puzzle_algo_V2(K,J):
 # print("Time spent for puzzle: ", stop - start)
 
 
-for n in range(5, 8):
+for n in range(2, 9):
     m = n + 4
-    results = read_file('final_results_BAK/PLS_%d_%d' % (m, n))
+    results = read_file('final_results/PLS_%d_%d' % (m, n))
     start = timeit.default_timer()
-    bigger = 0
-    for K_byte in results:
+    for i in range(len(results)):
+        K_byte = results[i]
         K = sc.PureSimplicialComplex(json.loads(K_byte))
-        list_IDCM_bin = sc.IDCM_Garrison_Scott(K)
-        if len(list_IDCM_bin)>bigger:
-            bigger = len(list_IDCM_bin)
-            J = [0]*K.m
-            J[0] = 2
-            J[1]=1
-            J[3]=1
-            start = timeit.default_timer()
-            print(puzzle_algo_V2(K, J))
-            stop = timeit.default_timer()
-            print("Time spent for Puzzle: ", stop - start)
-            start = timeit.default_timer()
-            print(len(sc.Garrison_Scott(sc.multiple_wedge(K,J))))
-            stop = timeit.default_timer()
-            print("Time spent for GS: ", stop - start)
+        # K.compute_MNF_set()
+        # K.MNF_bin_to_MNF()
+        J = [0]*K.m
+        J[0]=1
+        puzzle_algo_V2(K,J)
+        # print(i/len(results)*100,"%")
+    stop = timeit.default_timer()
+    print("(",n,",",m,")","Puzzle mean",(stop-start)/len(results))
+    # start = timeit.default_timer()
+    # for i in range(min(len(results),100)):
+    #     K_byte = results[i]
+    #     K = sc.PureSimplicialComplex(json.loads(K_byte))
+    #     J = [1]*K.m
+    #     print(i/min(len(results),100)*100,"%")
+    #     sc.Garrison_Scott(sc.multiple_wedge(K,J))
+    # stop = timeit.default_timer()
+    # print("(",n,",",m,")","GS mean",(stop-start)/min(len(results),100))
 
 
 
