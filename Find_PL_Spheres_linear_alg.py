@@ -10,10 +10,10 @@ G_vector = [2, 6, 10, 20, 30, 50, 70, 105, 140, 196, 252]
 
 np_arrange = np.arange(0,256)
 np_arrange_odd = 2*np.arange(0,127) + 1
-m = 10
-n = 6
+m = 6
+n = 2
 number_steps = 4
-raw_results_PATH = 'raw_results/PLS_%d_%d_1' % (m, n)
+raw_results_PATH = 'raw_results/PLS_%d_%d' % (m, n)
 
 def text(results,path):
     t = open(path, mode='a', encoding='utf-8')
@@ -182,7 +182,7 @@ def new_f(char_funct):
     M_cp = cp.asarray(M)
     list_v = lam.find_kernel(M)
     list_v_new = Gauss(list_v)
-    # print(list_v_new)
+    print(list_v_new)
     nbr_results = list_v.shape[0]
     print(nbr_results)
     print(M.shape)
