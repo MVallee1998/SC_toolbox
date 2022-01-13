@@ -1,11 +1,11 @@
 import SimplicialComplex as sc
 import json
 import timeit
-m = 13
-n = 9
+m = 8
+n = 4
 
-raw_results_path = 'raw_results/PLS_%d_%d_2' % (m, n)
-final_results_path = 'final_results/PLS_%d_%d_2' % (m, n)
+raw_results_path = 'raw_results/all_PLS_%d_%d' % (m, n)
+final_results_path = 'final_results/all_PLS_%d_%d_new' % (m, n)
 
 def read_file(filename):
     with open(filename, 'rb') as f:

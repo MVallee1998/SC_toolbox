@@ -475,6 +475,10 @@ def are_isom(K1, K2):
     sizes_MNF_K2.sort()
     if sizes_MNF_K1 != sizes_MNF_K2:
         return False
+    K1.create_f_vector()
+    K2.create_f_vector()
+    if K1.f_vector != K2.f_vector:
+        return False
     list_seq_K1 = []
     for vertex in range(1, K1.m + 1):
         list_seq_K1.append(sorted([len(MNF) for MNF in K1.MNF_set if vertex in MNF]))

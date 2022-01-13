@@ -5,15 +5,17 @@ import cupy as cp
 import SimplicialComplex as sc
 import numba as nb
 from itertools import combinations
+import sys
+np.set_printoptions(threshold=sys.maxsize)
 
 G_vector = [2, 6, 10, 20, 30, 50, 70, 105, 140, 196, 252]
 
 np_arrange = np.arange(0,256)
 np_arrange_odd = 2*np.arange(0,127) + 1
-m = 6
-n = 2
-number_steps = 4
-raw_results_PATH = 'raw_results/PLS_%d_%d' % (m, n)
+m = 9
+n = 5
+number_steps = 5
+raw_results_PATH = 'raw_results/all_PLS_%d_%d' % (m, n)
 
 def text(results,path):
     t = open(path, mode='a', encoding='utf-8')
@@ -175,20 +177,19 @@ def f(char_funct):
     return results
 
 
-def new_f(char_funct):
+def new_f(facets):
     start = timeit.default_timer()
-    facets = sc.find_facets_compatible_with_lambda(char_funct,m,n)
     M = lam.construct_matrix(facets)
     M_cp = cp.asarray(M)
     list_v = lam.find_kernel(M)
-    list_v_new = Gauss(list_v)
-    print(list_v_new)
+    list_v_new = reduce_wrt_columns(list_v,np.array([0]),0)
+    # print(list_v_new)
     nbr_results = list_v.shape[0]
     print(nbr_results)
-    print(M.shape)
     #The idea is to reorganize the generators so some subset of them cannot be added together
     list_not_together = M[np.sum(M,axis = 1)==5]
-    sum_of_not_together = np.zeros(M.shape[1])
+    sum_of_not_together = np.zeros(M.shape[1]) # this array represent which MF have been used already
+    sum_of_not_together+=list_v_new[0,:]
     list_distinct_not_together = []
     starting_row = 1
     list_gener_not_together = []
@@ -197,7 +198,7 @@ def new_f(char_funct):
         find_new_one = False
         for not_together in list_not_together:
             index_not_together = np.flatnonzero(not_together)
-            if np.count_nonzero(np.multiply(not_together,sum_of_not_together))==0 and rank(list_v_new[starting_row:,index_not_together]) == index_not_together.size -1 and np.count_nonzero(list_v[0,index_not_together])==0:
+            if np.sum(np.multiply(not_together,sum_of_not_together))==0 and rank(list_v_new[starting_row:,index_not_together]) == index_not_together.size -1:
                 sum_of_not_together+=not_together
                 list_v_new = reduce_wrt_columns(list_v_new,index_not_together,starting_row)
                 list_gener_not_together.append(list(range(starting_row,starting_row+index_not_together.size-1)))
@@ -211,7 +212,7 @@ def new_f(char_funct):
         find_new_one = False
         for not_together in list_not_together:
             index_not_together = np.flatnonzero(not_together)
-            if np.count_nonzero(np.multiply(not_together,sum_of_not_together))==0 and rank(list_v_new[starting_row:,index_not_together]) == index_not_together.size -1  and np.count_nonzero(list_v[0,index_not_together])==0:
+            if np.sum(np.multiply(not_together,sum_of_not_together))==0 and rank(list_v_new[starting_row:,index_not_together]) == index_not_together.size -1:
                 sum_of_not_together+=not_together
                 list_v_new = reduce_wrt_columns(list_v_new,index_not_together,starting_row)
                 list_gener_not_together.append(list(range(starting_row,starting_row+index_not_together.size-1)))
@@ -221,6 +222,25 @@ def new_f(char_funct):
                 break
     for k in range(starting_row,nbr_results):
         list_gener_not_together.append([k])
+    # unused_colums = np.flatnonzero(1-(sum_of_not_together-list_v_new[0,:]))
+    # test_list_v = reduce_wrt_columns(list_v_new,unused_colums,0)
+    # print(list_v_new[:,np.flatnonzero(list_v_new[0,:])])
+
+    # for not_together in M[np.logical_or(np.sum(M,axis = 1)==5,np.sum(M,axis = 1)==4)]:
+    #     # if np.sum(np.multiply(not_together,(sum_of_not_together+list_v_new[0,:])%2))==0:
+    #     #     print(np.sum(list_v_new[:,np.flatnonzero(not_together)],axis=0))
+    #     # print(list_v_new[:,np.flatnonzero(not_together)])
+    #     print('new')
+    #     if (list_v_new[0,np.flatnonzero(not_together)] != 0).any():
+    #         index=1
+    #         for gener_not_together in list_gener_not_together:
+    #             N = list_v_new[index:index+len(gener_not_together),np.flatnonzero(not_together)]
+    #             index+=len(gener_not_together)
+    #             print(N)
+
+    # print(list_v_new[:,(sum_of_not_together+list_v_new[0,:])%2==0])
+
+    #here we will create the lists where we store how to build the linear sums
     list_to_pick_lin_comb = []
     array_number_lines = np.zeros(len(list_gener_not_together),dtype=int)
     number_cases = 1
@@ -253,6 +273,7 @@ def new_f(char_funct):
     results = []
     vect = np.zeros(len(array_number_lines)-number_steps,dtype=int)
     keep_going = True
+    #this is the main loop
     while keep_going:
         vect_to_mult_array = base_vect_to_mult_array.copy()
         for l in range(number_steps,number_steps+vect.size):
@@ -283,10 +304,17 @@ def new_f(char_funct):
 #         for results in big_result:
 #             text(results,raw_results_PATH)
 
-list_char_funct = sc.enumerate_char_funct_orbits(n, m)
+# list_char_funct = sc.enumerate_char_funct_orbits(n, m)
 global_start = timeit.default_timer()
-for char_funct in list_char_funct:
-    results = new_f(char_funct)
+# for char_funct in list_char_funct[:5]:
+#     facets = sc.find_facets_compatible_with_lambda(char_funct,m,n)
+#     results = new_f(facets)
     # text(results,raw_results_PATH)
+
+MFset = []
+for MF in combinations(range(1, m + 1), n):
+    MFset.append(sc.face_to_binary(MF,m))
+results = new_f(MFset)
 global_end = timeit.default_timer()
+# text(results,raw_results_PATH)
 print("Total time spent", global_end - global_start)
