@@ -1,7 +1,7 @@
 import linear_alg_method as lam
 import timeit
 import numpy as np
-import cupy as cp
+import numpy as cp
 import SimplicialComplex as sc
 import numba as nb
 from itertools import combinations
@@ -12,9 +12,9 @@ G_vector = [2, 6, 10, 20, 30, 50, 70, 105, 140, 196, 252]
 
 np_arrange = np.arange(0,256)
 np_arrange_odd = 2*np.arange(0,127) + 1
-m = 9
-n = 5
-number_steps = 5
+m = 10
+n = 6
+number_steps = 2
 raw_results_PATH = 'raw_results/all_PLS_%d_%d' % (m, n)
 
 def text(results,path):
@@ -183,12 +183,10 @@ def new_f(facets):
     M_cp = cp.asarray(M)
     list_v = lam.find_kernel(M)
     list_v_new = reduce_wrt_columns(list_v,np.array([0]),0)
-    # print(list_v_new)
     nbr_results = list_v.shape[0]
-    print(nbr_results)
     #The idea is to reorganize the generators so some subset of them cannot be added together
     list_not_together = M[np.sum(M,axis = 1)==5]
-    sum_of_not_together = np.zeros(M.shape[1]) # this array represent which MF have been used already
+    sum_of_not_together = np.zeros(M.shape[1]) # this array represents which MF have been used already
     sum_of_not_together+=list_v_new[0,:]
     list_distinct_not_together = []
     starting_row = 1
@@ -242,7 +240,7 @@ def new_f(facets):
 
     #here we will create the lists where we store how to build the linear sums
     list_to_pick_lin_comb = []
-    array_number_lines = np.zeros(len(list_gener_not_together),dtype=int)
+    array_number_lines = np.zeros(len(list_gener_not_together),dtype=np.uint64)
     number_cases = 1
     for index in range(len(list_gener_not_together)):
         not_together = list_gener_not_together[index]
@@ -262,7 +260,7 @@ def new_f(facets):
         number_cases*=nbr_lines
     base_vect_to_mult_array = np.zeros((np.prod(array_number_lines[:number_steps]),nbr_results))
     base_vect_to_mult_array[:,0] = 1
-    print(array_number_lines)
+    # print(nbr_results,array_number_lines)
     vect = np.zeros(number_steps,dtype=int)
     for k in range(1,np.prod(array_number_lines[:number_steps])):
         give_next_vect(vect,array_number_lines[:number_steps])
@@ -292,8 +290,8 @@ def new_f(facets):
             # text(good_candidate_facets_list,raw_results_PATH)
         keep_going = give_next_vect(vect,array_number_lines[number_steps:])
     stop = timeit.default_timer()
-    print("Time spent: ", stop - start)
-    print("number of results", len(results))
+    # print("Time spent: ", stop - start)
+    # print("number of results", len(results))
     return results
 
 
@@ -304,17 +302,26 @@ def new_f(facets):
 #         for results in big_result:
 #             text(results,raw_results_PATH)
 
-# list_char_funct = sc.enumerate_char_funct_orbits(n, m)
-global_start = timeit.default_timer()
-# for char_funct in list_char_funct[:5]:
-#     facets = sc.find_facets_compatible_with_lambda(char_funct,m,n)
-#     results = new_f(facets)
-    # text(results,raw_results_PATH)
 
-MFset = []
-for MF in combinations(range(1, m + 1), n):
-    MFset.append(sc.face_to_binary(MF,m))
-results = new_f(MFset)
-global_end = timeit.default_timer()
+
+for n in range(2,8):
+    m=n+4
+    list_char_funct = sc.enumerate_char_funct_orbits(n, m)
+    global_start = timeit.default_timer()
+    for char_funct in list_char_funct[:1]:
+        facets = sc.find_facets_compatible_with_lambda(char_funct,m,n)
+        results = new_f(facets)
+        # text(results,raw_results_PATH)
+    global_end = timeit.default_timer()
+    print((n,m), global_end - global_start)
+
+# for n in range(5,6):
+#     m=n+4
+#     MFset = []
+#     for MF in combinations(range(1, m + 1), n):
+#         MFset.append(sc.face_to_binary(MF,m))
+#
+#     results = new_f(MFset)
+# global_end = timeit.default_timer()
 # text(results,raw_results_PATH)
-print("Total time spent", global_end - global_start)
+# print("Total time spent", global_end - global_start)
