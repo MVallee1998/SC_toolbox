@@ -1,7 +1,7 @@
 import linear_alg_method as lam
 import timeit
 import numpy as np
-import numpy as cp
+import cupy as cp
 import SimplicialComplex as sc
 import numba as nb
 from itertools import combinations
@@ -13,9 +13,9 @@ G_vector = [2, 6, 10, 20, 30, 50, 70, 105, 140, 196, 252]
 
 np_arrange = np.arange(0,256)
 np_arrange_odd = 2*np.arange(0,127) + 1
-m = 13
-n = 9
-number_steps = 1
+m = 12
+n = 8
+number_steps = 5
 raw_results_PATH = 'raw_results/all_PLS_%d_%d' % (m, n)
 
 def text(results,path):
@@ -68,7 +68,7 @@ def new_vect_to_mult_array_1(vect,size_kernel):
 
 
 
-@nb.njit
+# @nb.njit
 def get_product(M,A,vect_to_mult_array):
     candidate_array = A.dot(vect_to_mult_array) % 2
     prod = M.dot(candidate_array)
@@ -288,24 +288,24 @@ def new_f(facets):
 #         for results in big_result:
 #             text(results,raw_results_PATH)
 
-# list_char_funct = sc.enumerate_char_funct_orbits(n, m)
-# for char_funct in list_char_funct[:1]:
-#     facets = sc.find_facets_compatible_with_lambda(char_funct,m,n)
-#     results = new_f(facets)
+list_char_funct = sc.enumerate_char_funct_orbits(n, m)
+for char_funct in list_char_funct[:1]:
+    facets = sc.find_facets_compatible_with_lambda(char_funct,m,n)
+    results = new_f(facets)
 
 
-for n in range(2,8):
-    m=n+4
-    list_char_funct = sc.enumerate_char_funct_orbits(n, m)
-    global_start = timeit.default_timer()
-    if n>4:
-        number_steps = 4
-    for char_funct in list_char_funct[:1]:
-        facets = sc.find_facets_compatible_with_lambda(char_funct,m,n)
-        results = new_f(facets)
-        # text(results,raw_results_PATH)
-    global_end = timeit.default_timer()
-    print((n,m), global_end - global_start)
+# for n in range(2,8):
+#     m=n+4
+#     list_char_funct = sc.enumerate_char_funct_orbits(n, m)
+#     global_start = timeit.default_timer()
+#     if n>4:
+#         number_steps = 4
+#     for char_funct in list_char_funct[:1]:
+#         facets = sc.find_facets_compatible_with_lambda(char_funct,m,n)
+#         results = new_f(facets)
+#         # text(results,raw_results_PATH)
+#     global_end = timeit.default_timer()
+#     print((n,m), global_end - global_start)
 
 
 # for n in range(2,5):
