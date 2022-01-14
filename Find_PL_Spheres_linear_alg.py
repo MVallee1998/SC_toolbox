@@ -68,7 +68,7 @@ def new_vect_to_mult_array_1(vect,size_kernel):
 
 
 
-@nb.njit
+# @nb.njit
 def get_product(M,A,vect_to_mult_array):
     candidate_array = A.dot(vect_to_mult_array) % 2
     prod = M.dot(candidate_array)
