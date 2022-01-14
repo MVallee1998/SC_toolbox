@@ -288,10 +288,10 @@ def new_f(facets):
 #         for results in big_result:
 #             text(results,raw_results_PATH)
 
-list_char_funct = sc.enumerate_char_funct_orbits(n, m)
-for char_funct in list_char_funct[:1]:
-    facets = sc.find_facets_compatible_with_lambda(char_funct,m,n)
-    results = new_f(facets)
+# list_char_funct = sc.enumerate_char_funct_orbits(n, m)
+# for char_funct in list_char_funct[:1]:
+#     facets = sc.find_facets_compatible_with_lambda(char_funct,m,n)
+#     results = new_f(facets)
 
 
 for n in range(2,8):
