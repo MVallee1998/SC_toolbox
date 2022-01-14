@@ -15,7 +15,7 @@ np_arrange = np.arange(0,256)
 np_arrange_odd = 2*np.arange(0,127) + 1
 m = 13
 n = 9
-number_steps = 3
+number_steps = 1
 raw_results_PATH = 'raw_results/all_PLS_%d_%d' % (m, n)
 
 def text(results,path):
