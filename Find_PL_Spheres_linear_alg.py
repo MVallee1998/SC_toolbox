@@ -13,9 +13,9 @@ G_vector = [2, 6, 10, 20, 30, 50, 70, 105, 140, 196, 252]
 
 np_arrange = np.arange(0,256)
 np_arrange_odd = 2*np.arange(0,127) + 1
-m = 10
-n = 6
-number_steps = 4
+m = 11
+n = 7
+number_steps = 5
 raw_results_PATH = 'raw_results/all_PLS_%d_%d' % (m, n)
 
 def text(results,path):
@@ -289,7 +289,7 @@ def new_f(facets):
 #             text(results,raw_results_PATH)
 
 list_char_funct = sc.enumerate_char_funct_orbits(n, m)
-for char_funct in list_char_funct:
+for char_funct in list_char_funct[:1]:
     facets = sc.find_facets_compatible_with_lambda(char_funct,m,n)
     results = new_f(facets)
 
