@@ -15,7 +15,7 @@ np_arrange = np.arange(0,256)
 np_arrange_odd = 2*np.arange(0,127) + 1
 m = 12
 n = 8
-number_steps = 1
+number_steps = 5
 raw_results_PATH = 'raw_results/all_PLS_%d_%d' % (m, n)
 
 def text(results,path):
@@ -288,24 +288,24 @@ def new_f(facets):
 #         for results in big_result:
 #             text(results,raw_results_PATH)
 
-# list_char_funct = sc.enumerate_char_funct_orbits(n, m)
-# for char_funct in list_char_funct[:1]:
-#     facets = sc.find_facets_compatible_with_lambda(char_funct,m,n)
-#     results = new_f(facets)
+list_char_funct = sc.enumerate_char_funct_orbits(n, m)
+for char_funct in list_char_funct[:1]:
+    facets = sc.find_facets_compatible_with_lambda(char_funct,m,n)
+    results = new_f(facets)
 
 
-for n in range(2,8):
-    m=n+4
-    list_char_funct = sc.enumerate_char_funct_orbits(n, m)
-    global_start = timeit.default_timer()
-    if n>4:
-        number_steps = 4
-    for char_funct in list_char_funct[:1]:
-        facets = sc.find_facets_compatible_with_lambda(char_funct,m,n)
-        results = new_f(facets)
-        # text(results,raw_results_PATH)
-    global_end = timeit.default_timer()
-    print((n,m), global_end - global_start)
+# for n in range(2,8):
+#     m=n+4
+#     list_char_funct = sc.enumerate_char_funct_orbits(n, m)
+#     global_start = timeit.default_timer()
+#     if n>4:
+#         number_steps = 4
+#     for char_funct in list_char_funct[:1]:
+#         facets = sc.find_facets_compatible_with_lambda(char_funct,m,n)
+#         results = new_f(facets)
+#         # text(results,raw_results_PATH)
+#     global_end = timeit.default_timer()
+#     print((n,m), global_end - global_start)
 
 
 # for n in range(2,5):
