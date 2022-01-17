@@ -5,7 +5,7 @@
 #SBATCH --cpus-per-task=5
 #SBATCH --output=./PLS_9_13_1.out
 #SBATCH --error=./PLS_9_13_1.err
-#SBATCH --time=100:00:00
+#SBATCH --time=1500:00:00
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=5
 #SBATCH --ntasks-per-node=1
