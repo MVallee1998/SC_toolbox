@@ -1,7 +1,7 @@
 import linear_alg_method as lam
 import timeit
 import numpy as np
-import numpy as cp
+import cupy as cp
 import SimplicialComplex as sc
 import numba as nb
 from itertools import combinations
@@ -16,7 +16,7 @@ np_arrange_odd = 2*np.arange(0,127) + 1
 m = 13
 n = 9
 number_steps = 5
-raw_results_PATH = 'raw_results/all_PLS_%d_%d' % (m, n)
+raw_results_PATH = 'raw_results/PLS_%d_%d' % (m, n)
 
 def text(results,path):
     t = open(path, mode='a', encoding='utf-8')
