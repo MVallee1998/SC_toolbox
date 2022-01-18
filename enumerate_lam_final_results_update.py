@@ -1,8 +1,8 @@
 import SimplicialComplex as sc
 import json
 import timeit
-m = 7
-n = 3
+m = 10
+n = 6
 p=m-n
 raw_results_path = 'raw_results/PLS_%d_%d' % (m, n)
 final_results_path = 'final_results/PLS_%d_%d_new3' % (m, n)
@@ -27,7 +27,6 @@ N = len(results)
 
 i0=0
 while (not sc.PureSimplicialComplex(results[i0]).is_a_seed()) or sc.PureSimplicialComplex(results[i0]).Pic != p:
-    print(sc.PureSimplicialComplex(results[i0]).Pic)
     i0+=1
 K1 = sc.PureSimplicialComplex(results[i0])
 eq_classes = [K1]
