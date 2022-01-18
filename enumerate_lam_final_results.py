@@ -1,11 +1,11 @@
 import SimplicialComplex as sc
 import json
 import timeit
-m = 12
-n = 8
-
+m = 6
+n = 3
+p = m-n
 raw_results_path = 'raw_results/all_PLS_%d_%d' % (m, n)
-final_results_path = 'final_results/PLS_%d_%d_new' % (m, n)
+final_results_path = 'final_results/PLS_%d_%d_new2' % (m, n)
 
 def read_file(filename):
     with open(filename, 'rb') as f:
@@ -35,9 +35,12 @@ for i in range(len(results)):
         start_sub = timeit.default_timer()
     facets = results[i]
     K = sc.PureSimplicialComplex(facets)
-    if K.Pic == 4 and K.is_a_seed() and facets not in list_of_seeds:
-        list_of_seeds.append(facets)
-    del K
+    K.compute_MNF_set()
+    K.MNF_bin_to_MNF()
+    print(K.MNF_set)
+    if K.Pic == p and K.is_a_seed():
+        list_of_seeds.append(K)
+    else: del K
 stop = timeit.default_timer()
 print(len(list_of_seeds)," seeds selected.", " Time spent:", stop - start)
 
@@ -46,11 +49,12 @@ start = timeit.default_timer()
 start_sub = timeit.default_timer()
 N = len(list_of_seeds)
 for i in range(N):
-    K = sc.PureSimplicialComplex(list_of_seeds[i])
+    K = list_of_seeds[i]
     if i % 100 == 0:
         stop_sub = timeit.default_timer()
         print("time spent for 100:", stop_sub - start_sub, " Percentage processed: ", i / N * 100, "%")
         start_sub = timeit.default_timer()
+    print(K.MNF_set_bin,K.is_promising(),K.is_Z2_homology_sphere(),K.is_closed())
     if K.is_promising() and K.is_Z2_homology_sphere() and K.is_closed():
         good_seeds.append(K)
 stop = timeit.default_timer()

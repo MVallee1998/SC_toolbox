@@ -340,7 +340,7 @@ class PureSimplicialComplex:
 
     def is_Z2_homology_sphere(self):
         self.Z2_Betti_numbers()
-        if self.H == [2]:
+        if self.n == 1 and self.H == [2]:
             return True
         L = [1]
         for k in range(1, self.n - 1):
@@ -430,6 +430,9 @@ class PureSimplicialComplex:
                 return False
         return True
 
+    def find_seed(self):
+        return ()
+
 
 def wedge(K, v):
     if v > K.m or v < 0:
@@ -465,6 +468,10 @@ def multiple_wedge(K, J):
 def are_isom(K1, K2):
     if K1.n != K2.n or K1.m != K2.m or len(K1.facets_bin) != len(K2.facets_bin):
         return False
+    K1.create_f_vector()
+    K2.create_f_vector()
+    if K1.f_vector != K2.f_vector:
+        return False
     K1.compute_MNF_set()
     K2.compute_MNF_set()
     K1.MNF_bin_to_MNF()
@@ -474,10 +481,6 @@ def are_isom(K1, K2):
     sizes_MNF_K1.sort()
     sizes_MNF_K2.sort()
     if sizes_MNF_K1 != sizes_MNF_K2:
-        return False
-    K1.create_f_vector()
-    K2.create_f_vector()
-    if K1.f_vector != K2.f_vector:
         return False
     list_seq_K1 = []
     for vertex in range(1, K1.m + 1):
