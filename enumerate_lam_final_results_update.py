@@ -1,8 +1,8 @@
 import SimplicialComplex as sc
 import json
 import timeit
-m = 10
-n = 6
+m = 9
+n = 4
 p=m-n
 raw_results_path = 'raw_results/PLS_%d_%d' % (m, n)
 final_results_path = 'final_results/PLS_%d_%d_new3' % (m, n)

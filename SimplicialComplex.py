@@ -799,7 +799,11 @@ def char_funct_array_to_bin(char_funct):
 def enumerate_char_funct_orbits(n, m):
     list_char_funct_bin = []
     list_char_funct = []
-    for combi_iter in combinations([3, 5, 6, 9, 10, 12, 7, 11, 13, 14, 15], n):
+    list_of_rows= []
+    for k in range(3,2**(m-n)):
+        if k not in list_2_pow:
+            list_of_rows.append(k)
+    for combi_iter in combinations(list_of_rows, n):
         char_funct = list(combi_iter) + list_2_pow[:m - n]
         list_char_funct_bin.append(char_funct)
         current_char_funct = np.zeros((m, m - n))
@@ -807,11 +811,11 @@ def enumerate_char_funct_orbits(n, m):
             current_char_funct[i] = int_to_bin_array(char_funct[i], m - n)
         list_char_funct.append(current_char_funct.copy())
     # GL4 = enumerate_GL4()
-    SL4 = enumerate_SL4()
+    SLn = enumerate_SL(m-n)
     eq_classes_repres = [list_char_funct_bin[0]]
     eq_classes_ref = []
     mini = sorted(list_char_funct_bin[0])
-    for A in SL4:
+    for A in SLn:
         new_char_funct = list_char_funct[0].dot(A)
         new_char_funct %= 2
         min_new_char_funct = sorted(char_funct_array_to_bin(new_char_funct))
@@ -821,7 +825,7 @@ def enumerate_char_funct_orbits(n, m):
     for i in range(1, len(list_char_funct)):
         is_a_new_repres = True
         mini = sorted(list_char_funct_bin[i])
-        for A in SL4:
+        for A in SLn:
             new_char_funct = list_char_funct[i].dot(A)
             new_char_funct %= 2
             min_new_char_funct = sorted(char_funct_array_to_bin(new_char_funct))
@@ -892,15 +896,19 @@ def enumerate_GL4():
     return (GL4)
 
 
-def enumerate_SL4():
-    SL4 = []
+def enumerate_SL(n):
+    A = np.eye(n)
+    SLn = []
+    list_of_vectors = []
+    for vect in A:
+        list_of_vectors.append(vect)
     for vect in permutations(
-            [np.array([1, 0, 0, 0]), np.array([0, 1, 0, 0]), np.array([0, 0, 1, 0]), np.array([0, 0, 0, 1])]):
-        current_element = np.zeros((4, 4))
-        for k in range(4):
+            list_of_vectors):
+        current_element = np.zeros((n, n))
+        for k in range(n):
             current_element[k] = vect[k]
-        SL4.append(current_element.copy())
-    return SL4
+        SLn.append(current_element.copy())
+    return SLn
 
 
 def display_char_funct(char_funct, n):

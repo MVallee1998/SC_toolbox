@@ -1,7 +1,7 @@
 import linear_alg_method as lam
 import timeit
 import numpy as np
-import cupy as cp
+import numpy as cp
 import SimplicialComplex as sc
 import numba as nb
 from itertools import combinations
@@ -13,9 +13,9 @@ G_vector = [2, 6, 10, 20, 30, 50, 70, 105, 140, 196, 252]
 
 np_arrange = np.arange(0, 256)
 np_arrange_odd = 2 * np.arange(0, 127) + 1
-m = 12
-n = 8
-number_steps = 5
+m = 10
+n = 5
+number_steps = 3
 
 raw_results_PATH = 'raw_results/PLS_%d_%d' % (m, n)
 
@@ -190,8 +190,8 @@ def new_f(facets):
         for l in range(number_steps, number_steps + vect.size):
             vect_to_mult_array += list_to_pick_lin_comb[l][vect[l - number_steps]]
         candidate_array, prod = get_product(M_cp, A, cp.asarray(vect_to_mult_array.T))
-        # verifying_G_theorem = cp.sum(candidate_array, axis=0) >-10
-        verifying_G_theorem = cp.sum(candidate_array, axis=0) <= G_vector[n - 1]
+        verifying_G_theorem = cp.sum(candidate_array, axis=0) >-10
+        # verifying_G_theorem = cp.sum(candidate_array, axis=0) <= G_vector[n - 1]
         having_every_closed_ridges = cp.logical_not((prod >= 4).any(axis=0))
         both_condition = cp.logical_and(verifying_G_theorem, having_every_closed_ridges)
         good_conditions = cp.flatnonzero(both_condition)
@@ -216,8 +216,11 @@ def new_f(facets):
 #             text(results,raw_results_PATH)
 
 list_char_funct = sc.enumerate_char_funct_orbits(n, m)
-
-for char_funct in list_char_funct:
+print(len(list_char_funct))
+for k in range(len(list_char_funct)):
+    char_funct = list_char_funct[k]
+    if k%10==0:
+        print((k/len(list_char_funct))*100,'%')
     facets = sc.find_facets_compatible_with_lambda(char_funct, m, n)
     results = new_f(facets)
     text(results, raw_results_PATH)
