@@ -468,6 +468,8 @@ def multiple_wedge(K, J):
 def are_isom(K1, K2):
     if K1.n != K2.n or K1.m != K2.m or len(K1.facets_bin) != len(K2.facets_bin):
         return False
+    if K1.facets_bin == K2.facets_bin:
+        return True
     K1.create_f_vector()
     K2.create_f_vector()
     if K1.f_vector != K2.f_vector:

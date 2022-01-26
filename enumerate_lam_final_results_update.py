@@ -1,8 +1,8 @@
 import SimplicialComplex as sc
 import json
 import timeit
-m = 9
-n = 4
+m = 10
+n = 5
 p=m-n
 raw_results_path = 'raw_results/PLS_%d_%d' % (m, n)
 final_results_path = 'final_results/PLS_%d_%d_new3' % (m, n)
@@ -44,7 +44,7 @@ for i in range(i0+1,N):
             if sc.are_isom(K1,K2):
                 is_isom = True
                 break
-        if not is_isom:
+        if not is_isom and K2.is_promising() and K2.is_Z2_homology_sphere() and K2.is_closed():
             eq_classes.append(K2)
         else: del K2
     else: del K2

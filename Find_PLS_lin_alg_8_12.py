@@ -122,6 +122,7 @@ def new_f(facets):
     start = timeit.default_timer()
     M = lam.construct_matrix(facets)
     M_cp = cp.asarray(M)
+    print(M.shape)
     list_v = lam.find_kernel(M)
     reduce_wrt_columns(list_v, np.array([0]), 0)
     nbr_results = list_v.shape[0]
