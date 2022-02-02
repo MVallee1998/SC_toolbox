@@ -1,129 +1,251 @@
 import linear_alg_method as lam
 import timeit
 import numpy as np
+import numpy as cp
 import SimplicialComplex as sc
-from multiprocessing import Pool
+import numba as nb
+from itertools import combinations
+import sys
+import ctypes
+import numpy.ctypeslib as ctl
+from numpy.ctypeslib import ndpointer
+
+lib = ctypes.cdll.LoadLibrary("./foo.so")
+cfoo = lib.cfoo
+cfoo.restype = None
+cfoo.argtypes = [ctl.ndpointer(np.uint, flags='aligned, c_contiguous')]
+
+pow_2 = np.ones(64,dtype=np.uint)
+for k in range(62,-1,-1):
+    pow_2[k] = pow_2[k+1]*2
+cfoo(pow_2)
+np.set_printoptions(threshold=sys.maxsize)
 
 G_vector = [2, 6, 10, 20, 30, 50, 70, 105, 140, 196, 252]
 
-
+np_arrange = np.arange(0, 256)
+np_arrange_odd = 2 * np.arange(0, 127) + 1
 m = 15
 n = 11
-raw_results_PATH = 'raw_results/PLS_%d_%d' % (m, n)
-partial_results_PATH = 'partial_results/PLS_%d_%d' % (m, n)
+p=m-n
+number_steps = 3
 
-def text_list(results,path):
+raw_results_PATH = 'raw_results/PLS_%d_%d' % (m, n)
+
+
+def text(results, path):
     t = open(path, mode='a', encoding='utf-8')
     for K in results:
         t.write(str(K) + '\n')
     t.close()
 
-def text(K,path):
-    t = open(path, mode='a', encoding='utf-8')
-    t.write(str(K) + '\n')
-    t.close()
 
-def increment_index_list(index_list, max_size):
-    if len(index_list) < max_size:
-        if index_list[0] != 0:
-            return [0] + index_list
+def get_product(M, A, vect_to_mult_array):
+    candidate_array = cp.mod(A.dot(vect_to_mult_array), 2)
+    prod = M.dot(candidate_array)
+    return candidate_array, prod
+
+
+def Gauss(M):
+    N = M.copy()
+    a, b = M.shape
+    i = 0
+    j = 0
+    while i < a and j < b:
+        if N[i, j] == 0:
+            i_0 = -1
+            for i_iter in range(i + 1, a):
+                if N[i_iter, j] == 1:
+                    i_0 = i_iter
+                    break
+            if i_0 == -1:
+                j += 1
+                continue
+            N[[i_0, i]] = N[[i, i_0]]
+        for i_iter in range(0, i):
+            N[i_iter] = (N[i_iter] + N[i] * N[i_iter, j]) % 2
+        for i_iter in range(i + 1, a):
+            if N[i_iter, j] == 1:
+                N[i_iter] = (N[i_iter] + N[i]) % 2
+        j += 1
+        i += 1
+    return (N)
+
+
+def reduce_wrt_columns(M, array_columns, starting_row):
+    a, c = M.shape
+    b = array_columns.size
+    i = starting_row
+    j = 0
+    while i < a and j < b:
+        if M[i, array_columns[j]] == 0:
+            i_0 = -1
+            for i_iter in range(i + 1, a):
+                if M[i_iter, array_columns[j]] == 1:
+                    i_0 = i_iter
+                    break
+            if i_0 == -1:
+                j += 1
+                continue
+            M[[i_0, i]] = M[[i, i_0]]
+        for i_iter in range(i):
+            M[i_iter] = (M[i_iter] + M[i] * M[i_iter, array_columns[j]]) % 2
+        for i_iter in range(i + 1, a):
+            M[i_iter] = (M[i_iter] + M[i] * M[i_iter, array_columns[j]]) % 2
+        j += 1
+        i += 1
+
+
+def rank(M):
+    return (np.count_nonzero(np.sum(Gauss(M), axis=1)))
+
+
+@nb.njit
+def give_next_vect(vect, base):
+    index = 0
+    vect[index] = (vect[index] + 1) % base[index]
+    while vect[index] == 0 and index < vect.size - 1:
+        index += 1
+        vect[index] = (vect[index] + 1) % base[index]
+    if index == vect.size - 1:
+        if vect[index] == 0:
+            return False
+    return True
+
+
+def partition_generators(list_v_new, starting_row, list_not_together, list_distinct_not_together, sum_of_not_together,
+                         list_gener_not_together):
+    find_new_one = True
+    while find_new_one:
+        find_new_one = False
+        for not_together in list_not_together:
+            index_not_together = np.flatnonzero(not_together)
+            if np.sum(np.multiply(not_together, sum_of_not_together)) == 0 and rank(
+                    list_v_new[starting_row:, index_not_together]) == index_not_together.size - 1:
+                sum_of_not_together += not_together
+                reduce_wrt_columns(list_v_new, index_not_together, starting_row)
+                list_gener_not_together.append(list(range(starting_row, starting_row + index_not_together.size - 1)))
+                starting_row += index_not_together.size - 1
+                list_distinct_not_together.append(not_together.copy())
+                find_new_one = True
+                break
+    return starting_row
+
+
+def new_f(facets):
+    start = timeit.default_timer()
+    M = lam.construct_matrix(facets)
+    M_cp = cp.asarray(M)
+    nbr_ridges, nbr_facets = M.shape
+    print(M.shape)
+    list_v = lam.find_kernel(M.copy())
+    reduce_wrt_columns(list_v, np.array([0]), 0)
+    nbr_results = list_v.shape[0]
+
+    # The idea is to reorganize the generators so some subset of them cannot be added together
+
+    sum_of_not_together = np.zeros(M.shape[1])  # this array represents which MF have been used already
+    sum_of_not_together += list_v[0, :]
+    list_distinct_not_together = []
+    starting_row = 1
+    list_gener_not_together = []
+    list_not_together = M[np.sum(M, axis=1) == 6]
+    starting_row = partition_generators(list_v, starting_row, list_not_together, list_distinct_not_together,
+                                        sum_of_not_together,
+                                        list_gener_not_together)
+    list_not_together = M[np.sum(M, axis=1) == 5]
+    starting_row = partition_generators(list_v, starting_row, list_not_together, list_distinct_not_together,
+                                        sum_of_not_together,
+                                        list_gener_not_together)
+    list_not_together = M[np.sum(M, axis=1) == 4]
+    starting_row = partition_generators(list_v, starting_row, list_not_together, list_distinct_not_together,
+                                        sum_of_not_together,
+                                        list_gener_not_together)
+
+    for k in range(starting_row, nbr_results):
+        list_gener_not_together.append([k])
+    # here we will create the lists where we store how to build the linear sums
+    list_to_pick_lin_comb = []
+    array_number_lines = np.zeros(len(list_gener_not_together), dtype=np.uint64)
+    number_cases = 1
+    list_groups = np.ones(len(list_gener_not_together)+1,dtype=np.uint16)
+    for index in range(len(list_gener_not_together)):
+        not_together = list_gener_not_together[index]
+        list_groups[index+1] = len(not_together)
+        if len(not_together) == 1:
+            nbr_lines = 2
+        elif len(not_together) == 3:
+            nbr_lines = 7
+        elif len(not_together) == 4:
+            nbr_lines = 11
         else:
-            k = 0
-            while k < len(index_list) and index_list[k] == k:
-                k += 1
-            return [k] + index_list[k:]
-    else:
-        return []
-
-
-def increment_index_list_type2(index_array,size_index_array):
-    k = 0
-    while k < size_index_array and index_array[k] == 1:
-        index_array[k] = 0
-        k += 1
-    if k == size_index_array-4:
-        print("huitème de passé")
-    if k != size_index_array:
-        index_array[k] = 1
-
-def new_vect_to_mult_array(vector,size_index_array):
-    k=0
-    vect_to_mult_array = np.zeros((size_index_array,16384))
-    while k<16384 and vector.any()==1:
-        vect_to_mult_array[:,k] = vector.copy()
-        k+=1
-        increment_index_list_type2(vector,size_index_array)
-    return vect_to_mult_array
-
-# def new_vect_to_mult_array_1(x,size_index_array,list_2_pow):
-#     vect_to_mult_array = np.zeros((size_index_array,4096),dtype=np.float)
-#     for k in range(4096):
-#         vect_to_mult_array[:, k] = int_to_filter(x,size_index_array,list_2_pow)
-#         x+=1
-#         if x==2*list_2_pow[size_index_array-1]:
-#             x=0
-#             break
-#     return vect_to_mult_array,x
-#
-# def int_to_filter(x, nbr_results,list_2_pow):
-#     vector = np.zeros(nbr_results,np.int)
-#     for k in range(nbr_results):
-#         if list_2_pow[k]|x == x:
-#             vector[k] = 1
-#         if list_2_pow[k]>x:
-#             break
-#     return vector
-
-
-if __name__ == '__main__':
-    list_char_funct = sc.enumerate_char_funct_orbits(n, m)
+            nbr_lines = 16
+        array_number_lines[index] = nbr_lines
+        list_to_pick_lin_comb.append(np.zeros((nbr_lines, nbr_results)))
+        current_line = 1
+        for k in range(1, 3):
+            for iter_combi in combinations(not_together, k):
+                list_to_pick_lin_comb[-1][current_line, list(iter_combi)] = 1
+                current_line += 1
+        number_cases *= nbr_lines
+    base_vect_to_mult_array = np.zeros((np.prod(array_number_lines[:number_steps]), nbr_results))
+    base_vect_to_mult_array[:, 0] = 1
+    print(nbr_results, array_number_lines, np.format_float_scientific(np.prod(array_number_lines)))
+    vect = np.zeros(number_steps, dtype=int)
+    for k in range(1, np.prod(array_number_lines[:number_steps])):
+        give_next_vect(vect, array_number_lines[:number_steps])
+        for l in range(number_steps):
+            base_vect_to_mult_array[k] += list_to_pick_lin_comb[l][vect[l], :]
+    np_facets = cp.array(facets)
+    A = cp.asarray(np.transpose(list_v),dtype=np.uint)
     results = []
-    eq_classes = []
-    for char_funct in list_char_funct:
-        start = timeit.default_timer()
-        facets = sc.find_facets_compatible_with_lambda(char_funct, m, n)
-        M = lam.construct_matrix(facets)
-        list_v = lam.find_kernel(M)
-        nbr_results = list_v.shape[0]
-        print(nbr_results)
-        np_facets = np.array(facets)
-        A = np.transpose(list_v)
-        vect_to_mult = np.zeros(nbr_results, dtype=np.float)
-        vect_to_mult[0] = 1
-        while vect_to_mult.any() == 1:
-            vect_to_mult_array = new_vect_to_mult_array(vect_to_mult, nbr_results)
-            candidate_array = A.dot(vect_to_mult_array) % 2
-            prod = M.dot(candidate_array)
-            having_first_facet = candidate_array[0, :] == 1
-            verifying_G_theorem = np.sum(candidate_array, axis=0) <= G_vector[n - 1]
-            having_every_closed_ridges = np.logical_not((prod >= 4).any(axis=0))
-            good_candidates = candidate_array.T[
-                np.logical_and(np.logical_and(having_first_facet, verifying_G_theorem), having_every_closed_ridges)]
-            for good_candidate in good_candidates:
-                good_candidate_facets = np_facets[good_candidate == 1]
-                good_candidate_facets_list = list(good_candidate_facets)
-                already_found = False
-                K = sc.PureSimplicialComplex(good_candidate_facets_list)
-                for data in eq_classes:
-                    L, is_PLS, f = data
-                    if sc.are_isom(K, L):
-                        already_found = True
-                        break
-                if not already_found:
-                    if K.Pic == 4 and K.is_a_seed() and K.is_Z2_homology_sphere() and K.is_promising():
-                        eq_classes.append((K, True, char_funct))
-                        text(good_candidate_facets_list, partial_results_PATH)
-                        results.append(good_candidate_facets_list)
-                        print(good_candidate_facets_list, len(results))
-                    else:
-                        eq_classes.append((K, False, char_funct))
-                # K = sc.PureSimplicialComplex(good_candidate_facets_list)
-                # text(good_candidate_facets_list,raw_results_PATH)
-        stop = timeit.default_timer()
-        print("Time spent: ", stop - start)
-        print("number of results", len(results))
-    text_list(results,raw_results_PATH)
+    vect = np.zeros(len(array_number_lines) - number_steps, dtype=int)
 
-# list_char_funct = sc.enumerate_char_funct_orbits(n, m)
-# for char_funct in list_char_funct:
-#     results = f(char_funct)
+    A_to_C = np.dot(A,pow_2)
+    M_to_C = np.ones((n,nbr_facets),np.uint16)
+
+    for i in range(nbr_facets):
+        spot = 0
+        for j in range(nbr_ridges):
+            if M[j,i]==1:
+                M_to_C[spot,i] = j
+                spot+=1
+
+    print(list_groups,np.sum(list_groups))
+    GPU_handle_function(A_to_C,M_to_C,list_groups,nbr_ridges,nbr_facets)
+    # cfoo(A_to_C)
+
+
+    keep_going = False
+    # this is the main loop
+    while keep_going:
+        vect_to_mult_array = base_vect_to_mult_array.copy()
+        for l in range(number_steps, number_steps + vect.size):
+            vect_to_mult_array += list_to_pick_lin_comb[l][vect[l - number_steps]]
+        candidate_array, prod = get_product(M_cp, A, cp.asarray(vect_to_mult_array.T))
+        # verifying_G_theorem = cp.sum(candidate_array, axis=0) >-10
+        verifying_G_theorem = cp.sum(candidate_array, axis=0) <= G_vector[n - 1]
+        having_every_closed_ridges = cp.logical_not((prod >= 4).any(axis=0))
+        both_condition = cp.logical_and(verifying_G_theorem, having_every_closed_ridges)
+        good_conditions = cp.flatnonzero(both_condition)
+        good_candidates = candidate_array[:, good_conditions].T
+        for good_candidate in good_candidates:
+            good_candidate_facets = np_facets[good_candidate == 1]
+            good_candidate_facets_list = good_candidate_facets.tolist()
+            results.append(good_candidate_facets_list)
+            # K = sc.PureSimplicialComplex(good_candidate_facets_list)
+            # text(good_candidate_facets_list,raw_results_PATH)
+        keep_going = give_next_vect(vect, array_number_lines[number_steps:])
+    stop = timeit.default_timer()
+    print("Time spent: ", stop - start)
+    return results
+
+
+list_char_funct = sc.enumerate_char_funct_orbits(n, m)
+print(len(list_char_funct))
+for char_funct in list_char_funct:
+    facets = sc.find_facets_compatible_with_lambda(char_funct, m, n)
+    results = new_f(facets)
+    # text(results, raw_results_PATH)
+
+print("Finished")
