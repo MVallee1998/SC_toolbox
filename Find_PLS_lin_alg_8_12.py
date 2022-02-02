@@ -1,7 +1,7 @@
 import linear_alg_method as lam
 import timeit
 import numpy as np
-import cupy as cp
+import numpy as cp
 import SimplicialComplex as sc
 import numba as nb
 from itertools import combinations
@@ -15,7 +15,7 @@ np_arrange = np.arange(0, 256)
 np_arrange_odd = 2 * np.arange(0, 127) + 1
 m = 12
 n = 8
-number_steps = 5
+number_steps = 3
 
 raw_results_PATH = 'raw_results/PLS_%d_%d' % (m, n)
 
@@ -28,7 +28,7 @@ def text(results, path):
 
 
 def get_product(M, A, vect_to_mult_array):
-    candidate_array = cp.mod(A.dot(vect_to_mult_array),2)
+    candidate_array = cp.mod(A.dot(vect_to_mult_array), 2)
     prod = M.dot(candidate_array)
     return candidate_array, prod
 
@@ -86,14 +86,15 @@ def reduce_wrt_columns(M, array_columns, starting_row):
 def rank(M):
     return (np.count_nonzero(np.sum(Gauss(M), axis=1)))
 
+
 @nb.njit
 def give_next_vect(vect, base):
     index = 0
     vect[index] = (vect[index] + 1) % base[index]
-    while vect[index] == 0 and index < vect.size-1:
+    while vect[index] == 0 and index < vect.size - 1:
         index += 1
         vect[index] = (vect[index] + 1) % base[index]
-    if index == vect.size-1:
+    if index == vect.size - 1:
         if vect[index] == 0:
             return False
     return True
@@ -208,11 +209,12 @@ def new_f(facets):
     print("Time spent: ", stop - start)
     return results
 
-list_char_funct = sc.enumerate_char_funct_orbits(n, m)
 
+list_char_funct = sc.enumerate_char_funct_orbits(n, m)
+print(len(list_char_funct))
 for char_funct in list_char_funct:
     facets = sc.find_facets_compatible_with_lambda(char_funct, m, n)
     results = new_f(facets)
-    text(results, raw_results_PATH)
+    # text(results, raw_results_PATH)
 
 print("Finished")

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CLionExternalBuildManager">
+    <target id="97166c02-369e-4a64-8cb6-dbc4e9664a49" name="GPU" defaultType="TOOL">
+      <configuration id="ee7413d3-c2fe-4c03-90b2-a4d960735003" name="GPU" toolchainName="Default" />
+    </target>
+  </component>
+</project>
