@@ -6,19 +6,12 @@ import SimplicialComplex as sc
 import numba as nb
 from itertools import combinations
 import sys
-import ctypes
-import numpy.ctypeslib as ctl
-from numpy.ctypeslib import ndpointer
 
-lib = ctypes.cdll.LoadLibrary("./foo.so")
-cfoo = lib.cfoo
-cfoo.restype = None
-cfoo.argtypes = [ctl.ndpointer(np.uint, flags='aligned, c_contiguous')]
 
 pow_2 = np.ones(64,dtype=np.uint)
 for k in range(62,-1,-1):
     pow_2[k] = pow_2[k+1]*2
-cfoo(pow_2)
+# cfoo(pow_2)
 np.set_printoptions(threshold=sys.maxsize)
 
 G_vector = [2, 6, 10, 20, 30, 50, 70, 105, 140, 196, 252]
@@ -202,50 +195,51 @@ def new_f(facets):
     vect = np.zeros(len(array_number_lines) - number_steps, dtype=int)
 
     A_to_C = np.dot(A,pow_2)
-    M_to_C = np.ones((n,nbr_facets),np.uint16)
 
+    t = open('Data_'+str(n)+'_'+str(m)+'.cpp', mode='a', encoding='utf-8')
+    t.write('#define N '+str(n))
+    t.write('\n')
+    t.write('#define NBR_FACETS '+str(nbr_facets))
+    t.write('\n')
+    t.write('unsigned long A[NBR_FACETS]={')
+    for k in range(nbr_facets):
+        if k<nbr_facets-1:
+            t.write(str(A_to_C[k])+',')
+        else:
+            t.write(str(A_to_C[k])+'};')
+    M_to_C = np.ones((n,nbr_facets),np.uint16)
+    t.write('\n')
     for i in range(nbr_facets):
         spot = 0
         for j in range(nbr_ridges):
             if M[j,i]==1:
                 M_to_C[spot,i] = j
                 spot+=1
-
+    t.write('int M[N][NBR_FACETS]={')
+    for i in range(n):
+        t.write('{')
+        for j in range(nbr_facets):
+            if j<nbr_facets:
+                t.write(str(M_to_C[i,j])+',')
+            else:
+                t.write(str(M_to_C[i,j]))
+        t.write('},')
+    t.write('};')
+    t.write('\n')
+    t.write('int F[NBR_FACETS]={')
+    for F in np_facets:
+        t.write(str(F)+',')
+    t.write('};')
+    t.write('\n')
+    t.close()
     print(list_groups,np.sum(list_groups))
-    GPU_handle_function(A_to_C,M_to_C,list_groups,nbr_ridges,nbr_facets)
-    # cfoo(A_to_C)
-
-
-    keep_going = False
-    # this is the main loop
-    while keep_going:
-        vect_to_mult_array = base_vect_to_mult_array.copy()
-        for l in range(number_steps, number_steps + vect.size):
-            vect_to_mult_array += list_to_pick_lin_comb[l][vect[l - number_steps]]
-        candidate_array, prod = get_product(M_cp, A, cp.asarray(vect_to_mult_array.T))
-        # verifying_G_theorem = cp.sum(candidate_array, axis=0) >-10
-        verifying_G_theorem = cp.sum(candidate_array, axis=0) <= G_vector[n - 1]
-        having_every_closed_ridges = cp.logical_not((prod >= 4).any(axis=0))
-        both_condition = cp.logical_and(verifying_G_theorem, having_every_closed_ridges)
-        good_conditions = cp.flatnonzero(both_condition)
-        good_candidates = candidate_array[:, good_conditions].T
-        for good_candidate in good_candidates:
-            good_candidate_facets = np_facets[good_candidate == 1]
-            good_candidate_facets_list = good_candidate_facets.tolist()
-            results.append(good_candidate_facets_list)
-            # K = sc.PureSimplicialComplex(good_candidate_facets_list)
-            # text(good_candidate_facets_list,raw_results_PATH)
-        keep_going = give_next_vect(vect, array_number_lines[number_steps:])
-    stop = timeit.default_timer()
-    print("Time spent: ", stop - start)
-    return results
 
 
 list_char_funct = sc.enumerate_char_funct_orbits(n, m)
 print(len(list_char_funct))
 for char_funct in list_char_funct:
     facets = sc.find_facets_compatible_with_lambda(char_funct, m, n)
-    results = new_f(facets)
+    new_f(facets)
     # text(results, raw_results_PATH)
 
 print("Finished")
