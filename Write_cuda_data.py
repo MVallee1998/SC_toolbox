@@ -18,8 +18,8 @@ G_vector = [2, 6, 10, 20, 30, 50, 70, 105, 140, 196, 252]
 
 np_arrange = np.arange(0, 256)
 np_arrange_odd = 2 * np.arange(0, 127) + 1
-m = 15
-n = 11
+m = 14
+n = 10
 p=m-n
 number_steps = 3
 
@@ -125,7 +125,7 @@ def partition_generators(list_v_new, starting_row, list_not_together, list_disti
     return starting_row
 
 
-def new_f(facets):
+def new_f(facets,index_data):
     start = timeit.default_timer()
     M = lam.construct_matrix(facets)
     M_cp = cp.asarray(M)
@@ -191,15 +191,27 @@ def new_f(facets):
             base_vect_to_mult_array[k] += list_to_pick_lin_comb[l][vect[l], :]
     np_facets = cp.array(facets)
     A = cp.asarray(np.transpose(list_v),dtype=np.uint)
-    results = []
-    vect = np.zeros(len(array_number_lines) - number_steps, dtype=int)
 
-    A_to_C = np.dot(A,pow_2)
+    A_to_C = np.dot(A,pow_2[:nbr_results])
 
-    t = open('Data_'+str(n)+'_'+str(m)+'.cpp', mode='a', encoding='utf-8')
+    t = open('Data_'+str(n)+'_'+str(m)+'_'+str(index_data)+'.cpp', mode='a', encoding='utf-8')
     t.write('#define N '+str(n))
     t.write('\n')
     t.write('#define NBR_FACETS '+str(nbr_facets))
+    t.write('\n')
+    t.write('#define NBR_X0 '+str(np.prod(array_number_lines[2:8])))
+    t.write('\n')
+    t.write('#define NBR_X1 '+str(np.prod(array_number_lines[8:])))
+    t.write('\n')
+    t.write("int sizeVectX0 = 8;")
+    t.write('\n')
+    t.write("int sizeVectX1 = "+str(len(list_groups)-9)+';')
+    t.write('\n')
+    # t.write('#define NBR_RIDGES '+str(((nbr_ridges//196)+1)*196))
+    # t.write('\n')
+    t.write('#define NBR_GROUPS '+ str(len(list_groups)))
+    t.write('\n')
+    t.write("#define MAX_NBR_FACETS "+str(G_vector[n-1]))
     t.write('\n')
     t.write('unsigned long A[NBR_FACETS]={')
     for k in range(nbr_facets):
@@ -231,15 +243,24 @@ def new_f(facets):
         t.write(str(F)+',')
     t.write('};')
     t.write('\n')
+    t.write("unsigned int list_groups[NBR_GROUPS] = {")
+    for i in range(len(list_groups)):
+        if i<len(list_groups-1):
+            t.write(str(list_groups[i])+',')
+        else:
+            t.write(str(list_groups[i]))
+    t.write('};')
+    t.write('\n')
     t.close()
     print(list_groups,np.sum(list_groups))
 
 
 list_char_funct = sc.enumerate_char_funct_orbits(n, m)
 print(len(list_char_funct))
-for char_funct in list_char_funct:
+for k in range(len(list_char_funct)):
+    char_funct = list_char_funct[k]
     facets = sc.find_facets_compatible_with_lambda(char_funct, m, n)
-    new_f(facets)
+    new_f(facets,k)
     # text(results, raw_results_PATH)
 
 print("Finished")
