@@ -18,10 +18,10 @@ G_vector = [2, 6, 10, 20, 30, 50, 70, 105, 140, 196, 252]
 
 np_arrange = np.arange(0, 256)
 np_arrange_odd = 2 * np.arange(0, 127) + 1
-m = 14
-n = 10
+m = 7
+n = 3
 p=m-n
-number_steps = 3
+number_steps = 1
 
 raw_results_PATH = 'raw_results/PLS_%d_%d' % (m, n)
 
@@ -126,12 +126,14 @@ def partition_generators(list_v_new, starting_row, list_not_together, list_disti
 
 
 def new_f(facets,index_data):
-    start = timeit.default_timer()
     M = lam.construct_matrix(facets)
-    M_cp = cp.asarray(M)
     nbr_ridges, nbr_facets = M.shape
     print(M.shape)
     list_v = lam.find_kernel(M.copy())
+    reduce_wrt_columns(list_v, np.array(range(15)),0)
+    print(list_v)
+    return 0
+
     reduce_wrt_columns(list_v, np.array([0]), 0)
     nbr_results = list_v.shape[0]
 
@@ -157,6 +159,7 @@ def new_f(facets,index_data):
 
     for k in range(starting_row, nbr_results):
         list_gener_not_together.append([k])
+
     # here we will create the lists where we store how to build the linear sums
     list_to_pick_lin_comb = []
     array_number_lines = np.zeros(len(list_gener_not_together), dtype=np.uint64)
@@ -193,25 +196,26 @@ def new_f(facets,index_data):
     A = cp.asarray(np.transpose(list_v),dtype=np.uint)
 
     A_to_C = np.dot(A,pow_2[:nbr_results])
-
     t = open('Data_'+str(n)+'_'+str(m)+'_'+str(index_data)+'.cpp', mode='a', encoding='utf-8')
     t.write('#define N '+str(n))
     t.write('\n')
     t.write('#define NBR_FACETS '+str(nbr_facets))
     t.write('\n')
+    t.write('#define NBR_GENERATORS '+str(nbr_results))
+    t.write('\n')
     t.write('#define NBR_X0 '+str(np.prod(array_number_lines[2:8])))
     t.write('\n')
     t.write('#define NBR_X1 '+str(np.prod(array_number_lines[8:])))
-    t.write('\n')
-    t.write("int sizeVectX0 = 8;")
-    t.write('\n')
-    t.write("int sizeVectX1 = "+str(len(list_groups)-9)+';')
     t.write('\n')
     # t.write('#define NBR_RIDGES '+str(((nbr_ridges//196)+1)*196))
     # t.write('\n')
     t.write('#define NBR_GROUPS '+ str(len(list_groups)))
     t.write('\n')
     t.write("#define MAX_NBR_FACETS "+str(G_vector[n-1]))
+    t.write('\n')
+    t.write("int sizeVectX0 = 8;")
+    t.write('\n')
+    t.write("int sizeVectX1 = "+str(len(list_groups)-9)+';')
     t.write('\n')
     t.write('unsigned long A[NBR_FACETS]={')
     for k in range(nbr_facets):

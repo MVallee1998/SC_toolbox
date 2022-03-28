@@ -17,7 +17,7 @@ m = 12
 n = 8
 number_steps = 3
 
-raw_results_PATH = 'raw_results/PLS_%d_%d' % (m, n)
+raw_results_PATH = 'raw_results/PLS_%d_%d_0' % (m, n)
 
 
 def text(results, path):
@@ -167,7 +167,7 @@ def new_f(facets):
         array_number_lines[index] = nbr_lines
         list_to_pick_lin_comb.append(np.zeros((nbr_lines, nbr_results)))
         current_line = 1
-        for k in range(1, 3):
+        for k in range(1,3):
             for iter_combi in combinations(not_together, k):
                 list_to_pick_lin_comb[-1][current_line, list(iter_combi)] = 1
                 current_line += 1
@@ -176,17 +176,17 @@ def new_f(facets):
     base_vect_to_mult_array[:, 0] = 1
     print(nbr_results, array_number_lines, np.format_float_scientific(np.prod(array_number_lines)))
     vect = np.zeros(number_steps, dtype=int)
-    for k in range(1, np.prod(array_number_lines[:number_steps])):
+    for k in range(1,np.prod(array_number_lines[:number_steps])):
         give_next_vect(vect, array_number_lines[:number_steps])
         for l in range(number_steps):
             base_vect_to_mult_array[k] += list_to_pick_lin_comb[l][vect[l], :]
     np_facets = cp.array(facets)
     A = cp.asarray(np.transpose(list_v))
-
     results = []
     vect = np.zeros(len(array_number_lines) - number_steps, dtype=int)
     keep_going = True
     # this is the main loop
+    counter = 0
     while keep_going:
         vect_to_mult_array = base_vect_to_mult_array.copy()
         for l in range(number_steps, number_steps + vect.size):
@@ -204,17 +204,19 @@ def new_f(facets):
             results.append(good_candidate_facets_list)
             # K = sc.PureSimplicialComplex(good_candidate_facets_list)
             # text(good_candidate_facets_list,raw_results_PATH)
+        counter +=1
         keep_going = give_next_vect(vect, array_number_lines[number_steps:])
     stop = timeit.default_timer()
-    print("Time spent: ", stop - start)
+    print("Time spent: ", stop - start, "number of lin comb computed: ", counter*base_vect_to_mult_array.shape[0])
     return results
 
 
 list_char_funct = sc.enumerate_char_funct_orbits(n, m)
 print(len(list_char_funct))
-for char_funct in list_char_funct:
+for char_funct in list_char_funct[:1]:
     facets = sc.find_facets_compatible_with_lambda(char_funct, m, n)
     results = new_f(facets)
+    print(len(results))
     # text(results, raw_results_PATH)
 
 print("Finished")

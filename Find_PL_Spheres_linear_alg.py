@@ -1,7 +1,7 @@
 import linear_alg_method as lam
 import timeit
 import numpy as np
-import numpy as cp
+import cupy as cp
 import SimplicialComplex as sc
 import numba as nb
 from itertools import combinations
@@ -13,11 +13,11 @@ G_vector = [2, 6, 10, 20, 30, 50, 70, 105, 140, 196, 252]
 
 np_arrange = np.arange(0, 256)
 np_arrange_odd = 2 * np.arange(0, 127) + 1
-m = 15
-n = 11
-number_steps = 3
+m = 12
+n = 8
+number_steps = 4
 
-raw_results_PATH = 'raw_results/PLS_%d_%d' % (m, n)
+raw_results_PATH = 'raw_results/PLS_%d_%d_0' % (m, n)
 
 
 def text(results, path):
@@ -202,9 +202,9 @@ def new_f(facets):
             good_candidate_facets = np_facets[good_candidate == 1]
             good_candidate_facets_list = good_candidate_facets.tolist()
             results.append(good_candidate_facets_list)
-            K = sc.PureSimplicialComplex(good_candidate_facets_list)
-            if K.Pic ==4 and K.is_a_seed() and K.is_closed() and K.is_promising() and K.is_Z2_homology_sphere():
-                print(good_candidate_facets)
+            # K = sc.PureSimplicialComplex(good_candidate_facets_list)
+            # if K.Pic ==4 and K.is_a_seed() and K.is_closed() and K.is_promising() and K.is_Z2_homology_sphere():
+            #     print(good_candidate_facets)
         keep_going = give_next_vect(vect, array_number_lines[number_steps:])
     stop = timeit.default_timer()
     print("Time spent: ", stop - start)
@@ -227,13 +227,13 @@ def new_f(facets):
 
 list_char_funct = sc.enumerate_char_funct_orbits(n, m)
 print(len(list_char_funct))
-for k in range(len(list_char_funct)):
+for k in range(1):
     char_funct = list_char_funct[k]
     if k%10==0:
         print((k/len(list_char_funct))*100,'%')
     facets = sc.find_facets_compatible_with_lambda(char_funct, m, n)
     results = new_f(facets)
-    # text(results, raw_results_PATH)
+    text(results, raw_results_PATH)
 
 # for n in range(2,8):
 #     m=n+4

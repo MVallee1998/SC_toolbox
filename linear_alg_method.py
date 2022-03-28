@@ -1,9 +1,6 @@
 import numpy as np
-from itertools import combinations, permutations
-import Z2_linear_algebra
 import SimplicialComplex as sc
 import timeit
-from scipy.sparse import csr_matrix
 
 def construct_matrix(facets):
     ridges = []
