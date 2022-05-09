@@ -5,9 +5,8 @@ import timeit
 m = 15
 n = 11
 p = m - n
-raw_results_path = 'partial_results/PLS_11_15_seeds_test'
-# initial_isom_path = 'final_results/PLS_14_10_1'
-final_results_path = 'final_results/PLS_%d_%d_sample' % (m, n)
+raw_results_path = 'raw_results/PLS_15_11_non_seeds'
+final_results_path = 'final_results/PLS_%d_%d_from_non_seeds' % (m, n)
 
 
 def read_file(filename):
@@ -30,36 +29,56 @@ N = len(results)
 
 i0 = 0
 K_i0 = sc.PureSimplicialComplex(results[i0])
-while not K_i0.is_promising() or not K_i0.is_Z2_homology_sphere() or not K_i0.is_closed():
+is_case_1_2 = True
+for v in sc.list_2_pow[:m]:
+    link_K_i0 = sc.Link_of(K_i0,v)
+    if link_K_i0.is_a_seed():
+        is_case_1_2 = False
+        break
+while not is_case_1_2 or not K_i0.is_a_seed() or not sc.is_PLS_new(K_i0) or not K_i0.is_Z2_homology_sphere():
+    if i0%10==0:
+        print((i0/N)*100,'%')
     i0 += 1
+    if i0>=N:
+        break
     K_i0 = sc.PureSimplicialComplex(results[i0])
+    is_case_1_2 = True
+    for v in sc.list_2_pow[:m]:
+        link_K_i0 = sc.Link_of(K_i0,v)
+        if link_K_i0.is_a_seed():
+            is_case_1_2 = False
+            break
+
 K1 = sc.PureSimplicialComplex(results[i0])
 eq_classes = [K1]
-K1.compute_MNF_set()
-K1.MNF_bin_to_MNF()
-print(K1.MNF_set)
 # for facets_isom in [json.loads(facets_bytes) for facets_bytes in read_file(initial_isom_path)]:
 #     eq_classes.append(sc.PureSimplicialComplex(facets_isom))
 start_sub = timeit.default_timer()
 start = start_sub
-for i in range(N):
+for i in range(i0+1,N):
     stop_sub = timeit.default_timer()
     K2 = sc.PureSimplicialComplex(results[i])
-    is_isom = False
-    if (not K2.Pic == p) or (not K2.is_a_seed()):
+    if not K2.is_a_seed():
         del K2
         continue
+    is_case_1_2 = True
+    for v in sc.list_2_pow[:m]:
+        link_K2 = sc.Link_of(K2,v)
+        if link_K2.is_a_seed():
+            is_case_1_2 = False
+            break
+    if not is_case_1_2:
+        del K2
+        continue
+    is_isom = False
     print("Time spent for 1", stop_sub - start_sub, (i / N) * 100, "%", len(eq_classes))
     start_sub = timeit.default_timer()
     for K1 in eq_classes:
         if sc.are_isom(K1, K2):
             is_isom = True
             break
-    if not is_isom and K2.is_Z2_homology_sphere() and K2.is_promising() and K2.is_closed():
+    if not is_isom and sc.is_PLS_new(K2) and K2.is_Z2_homology_sphere():
         eq_classes.append(K2)
-        K2.compute_MNF_set()
-        K2.MNF_bin_to_MNF()
-        print(K2.MNF_set)
     else:
         del K2
 stop = timeit.default_timer()

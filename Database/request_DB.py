@@ -11,7 +11,7 @@ def read_file(filename):
 conn = sqlite3.connect("BAK/Real_Toric_Spaces.db")
 print("Successfully connected to the database")
 cursor = conn.cursor()
-# facets_list = read_file('.Result_Hyuntae/PLS_10_6')
+# facets_list = read_file('.Result_Hyuntae/CSPLS_6_10')
 # storing values in a variable
 values = []
 k = 0

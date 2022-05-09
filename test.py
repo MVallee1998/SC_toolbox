@@ -17,7 +17,7 @@ def read_file(filename):
 
 
 def text(result):
-    name = 'partial_results/PLS_%d_%d_seeds_test' % (n, m)
+    name = 'partial_results/PLS_%d_%d_seeds' % (n, m)
     t = open(name, mode='a', encoding='utf-8')
     for K in result:
         t.write(str(K) + '\n')

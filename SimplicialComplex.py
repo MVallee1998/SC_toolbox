@@ -60,13 +60,13 @@ class PureSimplicialComplex:
                 self.facets_bin = facets.copy()
                 self.facets_bin.sort()
                 for MF in self.facets_bin:
-                    test_n=0
+                    test_n = 0
                     two_pow = 1
                     while MF % two_pow != MF:
                         if two_pow | MF == MF:
-                            test_n+= 1
+                            test_n += 1
                         two_pow *= 2
-                    if test_n>=self.n:
+                    if test_n >= self.n:
                         self.n = test_n
                 for element in list_2_pow:
                     label_used = False
@@ -201,6 +201,7 @@ class PureSimplicialComplex:
                     break
             if is_a_facet:
                 self.facets_bin.append(facet)
+        self.facets_bin.sort()
         # if self.facets_bin[0] != list_2_pow[self.n]-1:
         #     list_others = []
         #     missed = 0
@@ -430,12 +431,26 @@ class PureSimplicialComplex:
                 return False
         return True
 
+    def give_non_seed_vertex(self):
+        if self.MNF_set_bin == None:
+            self.compute_MNF_set()
+        list_all_edges = [face_to_binary(list(facet_iter), self.m) for facet_iter in
+                          combinations(range(1, self.m + 1), 2)]
+        for edge_bin in list_all_edges:
+            is_pair = True
+            for MNF_bin in self.MNF_set_bin:
+                if MNF_bin & edge_bin in list_2_pow:  # 10 or 01 at the positions of the vertices of the edge
+                    is_pair = False
+            if is_pair and edge_bin not in self.MNF_set_bin:
+                return binary_to_face(edge_bin,self.m)
+        return []
+
     def find_seed(self):
         return ()
 
 
 def wedge(K, v):
-    if v > K.m or v < 0:
+    if v > K.m or v < 1:
         raise Exception
     K.compute_MNF_set()
     K.MNF_bin_to_MNF()
@@ -443,13 +458,15 @@ def wedge(K, v):
     for MNF in K.MNF_set:
         new_MNF_set.append([])
         for vertex in MNF:
-            if vertex<v:
+            if vertex < v:
                 new_MNF_set[-1].append(vertex)
             elif vertex == v:
                 new_MNF_set[-1].append(vertex)
-                new_MNF_set[-1].append(vertex+1)
+                new_MNF_set[-1].append(K.m+1)
             else:
-                new_MNF_set[-1].append(vertex+1)
+                new_MNF_set[-1].append(vertex)
+        new_MNF_set[-1].sort()
+    new_MNF_set.sort()
     return PureSimplicialComplex([], new_MNF_set, K.n + 1)
 
 
@@ -460,9 +477,23 @@ def multiple_wedge(K, J):
         raise Exception
     for v in range(K.m):
         for k in range(J[v]):
-            new_K = wedge(new_K, v + sum_wedge + 1)
-            sum_wedge+=1
+            new_K = wedge(new_K, v + 1)
+            sum_wedge += 1
     return new_K
+
+def give_IDCM_up_to_isom(K_J,J):
+    all_IDCM = IDCM_Garrison_Scott(K_J)
+    if len(all_IDCM)==0:
+        return []
+    list_isom = [all_IDCM[0]]
+    vertices_to_permute = []
+    for r in range(K_J.m):
+        if J[r]>0:
+            r_neighbors = (1<<K_J.m)-1
+            for MNF_bin in K_J.MNF_set_bin:
+                if (1<<r)|MNF_bin == MNF_bin:
+                    r_neighbors&=MNF_bin
+
 
 
 def are_isom(K1, K2):
@@ -551,6 +582,54 @@ def are_isom(K1, K2):
             i += 1
     return False
 
+def read_file(filename):
+    with open(filename, 'rb') as f:
+        data = f.readlines()
+    data = [x.strip() for x in data]
+    return data
+
+
+list_n_max = [2,3,5,11]
+
+seed_DB=[]
+for pic in range(1,5):
+    seed_DB.append([])
+    if pic == 1:
+        start = 1
+    else:
+        start = 2
+    for n in range(start,list_n_max[pic-1]):
+        seed_DB[-1].append([])
+        results_path = 'final_results/CSPLS_%d_%d' % (n,n+pic)
+        list_m_n_seeds = [json.loads(facets_bytes) for facets_bytes in read_file(results_path)]
+        for facets_seed in list_m_n_seeds:
+            seed_DB[-1][-1].append(PureSimplicialComplex(facets_seed))
+
+def is_PLS_new(K):
+    list_of_links = []
+    for v in list_2_pow[:K.m]:
+        link_v_K = Link_of(K,v)
+        list_non_seed_vertices = link_v_K.give_non_seed_vertex()
+        while list_non_seed_vertices:
+            link_v_K = Link_of(link_v_K,list_2_pow[list_non_seed_vertices[0]-1])
+            list_non_seed_vertices = link_v_K.give_non_seed_vertex()
+        list_of_links.append(PureSimplicialComplex(link_v_K.facets_bin))
+    is_PLS = False
+    for link_K in list_of_links:
+        is_PLS = False
+        for L in seed_DB[link_K.Pic-1][link_K.n-2]:
+            if are_isom(link_K,L):
+                is_PLS = True
+                break
+        if not is_PLS:
+            break
+    if is_PLS:
+        K = list_of_links[0]
+        K.compute_MNF_set()
+        K.MNF_bin_to_MNF()
+        print(K.MNF_set)
+    return is_PLS
+
 
 def relabel_facets(K, old_labels):
     if len(old_labels) != K.m:
@@ -577,6 +656,12 @@ def relabel_MNF(K, old_labels):
     new_MNF.sort()
     return new_MNF
 
+
+def suspension(K):
+    new_facets = []
+    for facet in K.facets_bin:
+        new_facets.append((facet << 1) | 1)
+    return PureSimplicialComplex(new_facets)
 
 def Link_of(K, F):
     if not K.FP_bin:
@@ -661,12 +746,12 @@ def Hyuntae_algo(pile, candidate_facets_ref, results, aimed_m):
 
 
 def Garrison_Scott(K):
-    while K.facets[0]!= list(range(1,K.n+1)):
+    while K.facets[0] != list(range(1, K.n + 1)):
         vertex_to_relabel = 0
         image_of_vertex = 0
-        for i in range(1,K.n+1):
-            if K.facets[0][i-1] != i:
-                vertex_to_relabel = K.facets[0][i-1]
+        for i in range(1, K.n + 1):
+            if K.facets[0][i - 1] != i:
+                vertex_to_relabel = K.facets[0][i - 1]
                 image_of_vertex = i
                 break
         new_facets = []
@@ -801,8 +886,8 @@ def char_funct_array_to_bin(char_funct):
 def enumerate_char_funct_orbits(n, m):
     list_char_funct_bin = []
     list_char_funct = []
-    list_of_rows= []
-    for k in range(3,2**(m-n)):
+    list_of_rows = []
+    for k in range(3, 2 ** (m - n)):
         if k not in list_2_pow:
             list_of_rows.append(k)
     for combi_iter in combinations(list_of_rows, n):
@@ -813,7 +898,7 @@ def enumerate_char_funct_orbits(n, m):
             current_char_funct[i] = int_to_bin_array(char_funct[i], m - n)
         list_char_funct.append(current_char_funct.copy())
     # GL4 = enumerate_GL4()
-    SLn = enumerate_SL(m-n)
+    SLn = enumerate_SL(m - n)
     eq_classes_repres = [list_char_funct_bin[0]]
     eq_classes_ref = []
     mini = sorted(list_char_funct_bin[0])
@@ -919,6 +1004,7 @@ def display_char_funct(char_funct, n):
         char_funct_array[:, k] = int_to_bin_array(char_funct[k], n)
     print(char_funct_array[:, n:])
 
+
 def give_next_vect(vect, base):
     index = 0
     vect[index] = (vect[index] + 1) % base[index]
@@ -926,16 +1012,17 @@ def give_next_vect(vect, base):
         index += 1
         vect[index] = (vect[index] + 1) % base[index]
 
+
 def find_Z4_homology(K, IDCM):
     n = K.n
     m = K.m
-    H = np.zeros(K.n+1)
-    list_gene_omega = np.array([IDCM[d] * list_2_pow[n] + list_2_pow[d] for d in range(n)],dtype = int)
+    H = np.zeros(K.n + 1)
+    list_gene_omega = np.array([IDCM[d] * list_2_pow[n] + list_2_pow[d] for d in range(n)], dtype=int)
     vect = np.zeros(n)
-    list_omega = np.zeros(2**n,dtype=int)
-    for k in range(2**n):
+    list_omega = np.zeros(2 ** n, dtype=int)
+    for k in range(2 ** n):
         list_omega[k] = np.sum(list_gene_omega[np.flatnonzero(vect)])
-        give_next_vect(vect, 2*np.ones(n))
+        give_next_vect(vect, 2 * np.ones(n))
     list_H_omega = []
     for omega in list_omega:
         if omega == 0:
@@ -950,8 +1037,8 @@ def find_Z4_homology(K, IDCM):
             H[0] += 1
         else:
             for i in range(len(H_omega)):
-                if i==0:
-                    H[i+1] += (H_omega[i]-1)
+                if i == 0:
+                    H[i + 1] += (H_omega[i] - 1)
                 else:
-                    H[i+1] += H_omega[i]
+                    H[i + 1] += H_omega[i]
     return H

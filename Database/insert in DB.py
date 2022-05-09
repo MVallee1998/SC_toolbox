@@ -22,7 +22,7 @@ query = "INSERT INTO pure_simplicial_complex (n, m, Pic, max_faces, is_PL_Sphere
         "VALUES (%s, %s, %s, %s, %s, %s)"
 
 # storing values in a variable
-max_faces_list = read_file('./PLS_9_5.txt')
+max_faces_list = read_file('./CSPLS_5_9.txt')
 values = []
 for max_face in max_faces_list:
     values.append((5, 9, 4, max_face, 1, 'Hyuntae'))

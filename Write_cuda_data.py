@@ -18,12 +18,12 @@ G_vector = [2, 6, 10, 20, 30, 50, 70, 105, 140, 196, 252]
 
 np_arrange = np.arange(0, 256)
 np_arrange_odd = 2 * np.arange(0, 127) + 1
-m = 7
-n = 3
+m = 14
+n = 10
 p=m-n
 number_steps = 1
 
-raw_results_PATH = 'raw_results/PLS_%d_%d' % (m, n)
+raw_results_PATH = 'raw_results/CSPLS_%d_%d' % (n,m)
 
 
 def text(results, path):
@@ -130,10 +130,6 @@ def new_f(facets,index_data):
     nbr_ridges, nbr_facets = M.shape
     print(M.shape)
     list_v = lam.find_kernel(M.copy())
-    reduce_wrt_columns(list_v, np.array(range(15)),0)
-    print(list_v)
-    return 0
-
     reduce_wrt_columns(list_v, np.array([0]), 0)
     nbr_results = list_v.shape[0]
 
@@ -186,8 +182,9 @@ def new_f(facets,index_data):
         number_cases *= nbr_lines
     base_vect_to_mult_array = np.zeros((np.prod(array_number_lines[:number_steps]), nbr_results))
     base_vect_to_mult_array[:, 0] = 1
-    print(nbr_results, array_number_lines, np.format_float_scientific(np.prod(array_number_lines)))
+    print(np.format_float_scientific(np.prod(array_number_lines)*(n+4)*nbr_facets))
     vect = np.zeros(number_steps, dtype=int)
+    return 0
     for k in range(1, np.prod(array_number_lines[:number_steps])):
         give_next_vect(vect, array_number_lines[:number_steps])
         for l in range(number_steps):
@@ -262,6 +259,7 @@ def new_f(facets,index_data):
 list_char_funct = sc.enumerate_char_funct_orbits(n, m)
 print(len(list_char_funct))
 for k in range(len(list_char_funct)):
+    print(k)
     char_funct = list_char_funct[k]
     facets = sc.find_facets_compatible_with_lambda(char_funct, m, n)
     new_f(facets,k)
