@@ -248,28 +248,28 @@ for K in list_IDCM_test[1:]:
 data_to_text = []
 for K in list_isom:
     data_to_text.append(K.facets_bin)
-text(data_to_text, 'final_results/CnSPLS_10_14')
-# N=len(list_isom)
-# for k in range(N):
-#     K = list_isom[k]
-#     list_IDCM_10_14 = sc.IDCM_Garrison_Scott(K)
-#     print((k/N)*100,'%',"Nbr of IDCM",len(list_IDCM_10_14))
-#     K_sus = sc.suspension(K)
-#     if len(list_IDCM_10_14)<100:
-#         for IDCM_10_14 in list_IDCM_10_14:
-#             IDCM_11_15 = []
-#             for x in range(1,16):
-#                 if x not in IDCM_10_14:
-#                     IDCM_11_15.append(x)
-#                     break
-#             for x in IDCM_10_14:
-#                 IDCM_11_15.append(x)
-#             K_max_facets = sc.find_facets_compatible_with_lambda(IDCM_11_15,m,n)
-#             new_f(K_max_facets,K_sus.facets_bin,list_results)
-#             print(len(list_results))
-#     else:
-#         print(K.facets_bin)
-#
+# text(data_to_text, 'final_results/CnSPLS_10_14')
+N=len(list_isom)
+for k in range(N):
+    K = list_isom[k]
+    list_IDCM_10_14 = sc.IDCM_Garrison_Scott(K)
+    print((k/N)*100,'%',"Nbr of IDCM",len(list_IDCM_10_14))
+    K_sus = sc.suspension(K)
+    if len(list_IDCM_10_14)<100:
+        for IDCM_10_14 in list_IDCM_10_14:
+            IDCM_11_15 = []
+            for x in range(1,16):
+                if x not in IDCM_10_14:
+                    IDCM_11_15.append(x)
+                    break
+            for x in IDCM_10_14:
+                IDCM_11_15.append(x)
+            K_max_facets = sc.find_facets_compatible_with_lambda(IDCM_11_15,m,n)
+            new_f(K_max_facets,K_sus.facets_bin,list_results)
+            print(len(list_results))
+    else:
+        print(K.facets_bin)
+
 # text(list_results,raw_results_PATH)
 #
 # print("Finished",len(list_IDCM_test))
