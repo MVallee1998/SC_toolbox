@@ -223,7 +223,7 @@ def Try_J(N,K,J,J_max,IDCM_results,starting_index):
 list_IDCM_test = []
 for n_seed in range(9,1,-1):
     print(n_seed)
-    results_path = 'final_results/PLS_%d_%d' % (n_seed+p,n_seed)
+    results_path = 'final_results/CSPLS_%d_%d' % (n_seed,n_seed+p)
     list_m_n_seeds = [json.loads(facets_bytes) for facets_bytes in read_file(results_path)]
     for K_facets in list_m_n_seeds:
         K = sc.PureSimplicialComplex(K_facets)
@@ -247,28 +247,29 @@ for K in list_IDCM_test[1:]:
 
 data_to_text = []
 for K in list_isom:
+    print(K.facets_bin)
     data_to_text.append(K.facets_bin)
 # text(data_to_text, 'final_results/CnSPLS_10_14')
-N=len(list_isom)
-for k in range(N):
-    K = list_isom[k]
-    list_IDCM_10_14 = sc.IDCM_Garrison_Scott(K)
-    print((k/N)*100,'%',"Nbr of IDCM",len(list_IDCM_10_14))
-    K_sus = sc.suspension(K)
-    if len(list_IDCM_10_14)<100:
-        for IDCM_10_14 in list_IDCM_10_14:
-            IDCM_11_15 = []
-            for x in range(1,16):
-                if x not in IDCM_10_14:
-                    IDCM_11_15.append(x)
-                    break
-            for x in IDCM_10_14:
-                IDCM_11_15.append(x)
-            K_max_facets = sc.find_facets_compatible_with_lambda(IDCM_11_15,m,n)
-            new_f(K_max_facets,K_sus.facets_bin,list_results)
-            print(len(list_results))
-    else:
-        print(K.facets_bin)
+# N=len(list_isom)
+# for k in range(N):
+#     K = list_isom[k]
+#     list_IDCM_10_14 = sc.IDCM_Garrison_Scott(K)
+#     print((k/N)*100,'%',"Nbr of IDCM",len(list_IDCM_10_14))
+#     K_sus = sc.suspension(K)
+#     if len(list_IDCM_10_14)<100:
+#         for IDCM_10_14 in list_IDCM_10_14:
+#             IDCM_11_15 = []
+#             for x in range(1,16):
+#                 if x not in IDCM_10_14:
+#                     IDCM_11_15.append(x)
+#                     break
+#             for x in IDCM_10_14:
+#                 IDCM_11_15.append(x)
+#             K_max_facets = sc.find_facets_compatible_with_lambda(IDCM_11_15,m,n)
+#             new_f(K_max_facets,K_sus.facets_bin,list_results)
+#             print(len(list_results))
+#     else:
+#         print(K.facets_bin)
 
 # text(list_results,raw_results_PATH)
 #
