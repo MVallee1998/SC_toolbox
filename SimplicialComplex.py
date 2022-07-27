@@ -11,7 +11,7 @@ import Z2_linear_algebra as Z2la
 
 G_vector = [2, 6, 10, 20, 30, 50, 70, 105, 140, 196, 252]
 list_2_pow = [1]
-for k in range(16):
+for k in range(30):
     list_2_pow.append(list_2_pow[-1] * 2)
 
 
@@ -23,7 +23,7 @@ def face_to_binary(face, m):
 
 
 def binary_to_face(x, m):
-    return [k + 1 for k in range(m) if list_2_pow[k] | x == x]
+    return [k + 1 for k in range(m) if (list_2_pow[k] | x) == x]
 
 
 class PureSimplicialComplex:
@@ -55,27 +55,22 @@ class PureSimplicialComplex:
                 self.m = len(labels)
                 self.facets_bin = [face_to_binary(facet, self.m) for facet in self.facets]
             else:
-                self.n = 0
-                self.m = 0
-                self.facets_bin = facets.copy()
+
+
+                self.n = max([MF.bit_count() for MF in facets])
+                self.m = np.bitwise_or.reduce(np.array(facets)).bit_count()
+                np_facets = np.array(facets)
+                or_facets = np.bitwise_or.reduce(np_facets)
+                l=0
+                while l != self.m:
+                    l=0
+                    while list_2_pow[l] | or_facets == or_facets:
+                        l+=1
+                    np_facets = (np_facets>>(l+1))<<(l) |( ((np_facets>>(l+1))<<(l+1))^np_facets)
+                    or_facets = np.bitwise_or.reduce(np_facets)
+                # print(or_facets)
+                self.facets_bin = np_facets.tolist()
                 self.facets_bin.sort()
-                for MF in self.facets_bin:
-                    test_n = 0
-                    two_pow = 1
-                    while MF % two_pow != MF:
-                        if two_pow | MF == MF:
-                            test_n += 1
-                        two_pow *= 2
-                    if test_n >= self.n:
-                        self.n = test_n
-                for element in list_2_pow:
-                    label_used = False
-                    for facet in self.facets_bin:
-                        if facet | element == facet:
-                            label_used = True
-                            break
-                    if label_used:
-                        self.m += 1
                 self.facets = []
                 for facet_bin in self.facets_bin:
                     self.facets.append(binary_to_face(facet_bin, self.m))
@@ -106,7 +101,7 @@ class PureSimplicialComplex:
         if not self.FP_bin:
             self.FP_bin = [dict() for i in range(self.n)]
             for facet_bin in self.facets_bin:
-                self.FP_bin[len(binary_to_face(facet_bin, self.m)) - 1][facet_bin] = []
+                self.FP_bin[facet_bin.bit_count()-1][facet_bin] = []
             # self.FP_bin[-1] = dict.fromkeys(self.facets_bin, [])
             for k in range(self.n - 2, -1, -1):
                 for face in self.FP_bin[k + 1]:
@@ -442,7 +437,7 @@ class PureSimplicialComplex:
                 if MNF_bin & edge_bin in list_2_pow:  # 10 or 01 at the positions of the vertices of the edge
                     is_pair = False
             if is_pair and edge_bin not in self.MNF_set_bin:
-                return binary_to_face(edge_bin,self.m)
+                return binary_to_face(edge_bin, self.m)
         return []
 
     def find_seed(self):
@@ -462,7 +457,7 @@ def wedge(K, v):
                 new_MNF_set[-1].append(vertex)
             elif vertex == v:
                 new_MNF_set[-1].append(vertex)
-                new_MNF_set[-1].append(K.m+1)
+                new_MNF_set[-1].append(K.m + 1)
             else:
                 new_MNF_set[-1].append(vertex)
         new_MNF_set[-1].sort()
@@ -481,19 +476,19 @@ def multiple_wedge(K, J):
             sum_wedge += 1
     return new_K
 
-def give_IDCM_up_to_isom(K_J,J):
+
+def give_IDCM_up_to_isom(K_J, J):
     all_IDCM = IDCM_Garrison_Scott(K_J)
-    if len(all_IDCM)==0:
+    if len(all_IDCM) == 0:
         return []
     list_isom = [all_IDCM[0]]
     vertices_to_permute = []
     for r in range(K_J.m):
-        if J[r]>0:
-            r_neighbors = (1<<K_J.m)-1
+        if J[r] > 0:
+            r_neighbors = (1 << K_J.m) - 1
             for MNF_bin in K_J.MNF_set_bin:
-                if (1<<r)|MNF_bin == MNF_bin:
-                    r_neighbors&=MNF_bin
-
+                if (1 << r) | MNF_bin == MNF_bin:
+                    r_neighbors &= MNF_bin
 
 
 def are_isom(K1, K2):
@@ -582,6 +577,7 @@ def are_isom(K1, K2):
             i += 1
     return False
 
+
 def read_file(filename):
     with open(filename, 'rb') as f:
         data = f.readlines()
@@ -589,36 +585,36 @@ def read_file(filename):
     return data
 
 
-list_n_max = [2,3,5,11]
+list_n_max = [2, 3, 5, 11]
+seed_DB = []
+# for pic in range(1, 5):
+#     seed_DB.append([])
+#     if pic == 1:
+#         start = 1
+#     else:
+#         start = 2
+#     for n in range(start, list_n_max[pic - 1]):
+#         seed_DB[-1].append([])
+#         results_path = 'final_results/CSPLS_%d_%d' % (n, n + pic)
+#         list_m_n_seeds = [json.loads(facets_bytes) for facets_bytes in read_file(results_path)]
+#         for facets_seed in list_m_n_seeds:
+#             seed_DB[-1][-1].append(PureSimplicialComplex(facets_seed))
 
-seed_DB=[]
-for pic in range(1,5):
-    seed_DB.append([])
-    if pic == 1:
-        start = 1
-    else:
-        start = 2
-    for n in range(start,list_n_max[pic-1]):
-        seed_DB[-1].append([])
-        results_path = 'final_results/CSPLS_%d_%d' % (n,n+pic)
-        list_m_n_seeds = [json.loads(facets_bytes) for facets_bytes in read_file(results_path)]
-        for facets_seed in list_m_n_seeds:
-            seed_DB[-1][-1].append(PureSimplicialComplex(facets_seed))
 
 def is_PLS_new(K):
     list_of_links = []
     for v in list_2_pow[:K.m]:
-        link_v_K = Link_of(K,v)
+        link_v_K = Link_of(K, v)
         list_non_seed_vertices = link_v_K.give_non_seed_vertex()
         while list_non_seed_vertices:
-            link_v_K = Link_of(link_v_K,list_2_pow[list_non_seed_vertices[0]-1])
+            link_v_K = Link_of(link_v_K, list_2_pow[list_non_seed_vertices[0] - 1])
             list_non_seed_vertices = link_v_K.give_non_seed_vertex()
         list_of_links.append(PureSimplicialComplex(link_v_K.facets_bin))
     is_PLS = False
     for link_K in list_of_links:
         is_PLS = False
-        for L in seed_DB[link_K.Pic-1][link_K.n-2]:
-            if are_isom(link_K,L):
+        for L in seed_DB[link_K.Pic - 1][link_K.n - 2]:
+            if are_isom(link_K, L):
                 is_PLS = True
                 break
         if not is_PLS:
@@ -662,6 +658,7 @@ def suspension(K):
     for facet in K.facets_bin:
         new_facets.append((facet << 1) | 1)
     return PureSimplicialComplex(new_facets)
+
 
 def Link_of(K, F):
     if not K.FP_bin:
@@ -1017,11 +1014,11 @@ def find_Z4_homology(K, IDCM):
     n = K.n
     m = K.m
     H = np.zeros(K.n + 1)
-    list_gene_omega = np.array([IDCM[d] * list_2_pow[n] + list_2_pow[d] for d in range(n)], dtype=int)
+    list_gene_omega = np.array([(IDCM[d] << n) + list_2_pow[d] for d in range(n)], dtype = int)
     vect = np.zeros(n)
     list_omega = np.zeros(2 ** n, dtype=int)
     for k in range(2 ** n):
-        list_omega[k] = np.sum(list_gene_omega[np.flatnonzero(vect)])
+        list_omega[k] = np.bitwise_xor.reduce(list_gene_omega[np.flatnonzero(vect)])
         give_next_vect(vect, 2 * np.ones(n))
     list_H_omega = []
     for omega in list_omega:
@@ -1032,7 +1029,7 @@ def find_Z4_homology(K, IDCM):
             K_omega.Z2_Betti_numbers()
             list_H_omega.append(K_omega.H)
     for H_omega in list_H_omega:
-        print(H_omega)
+        # print(H_omega)
         if not H_omega:
             H[0] += 1
         else:
