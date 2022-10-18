@@ -5,6 +5,7 @@ import numpy as np
 import numpy.polynomial as npp
 
 import Betti_numbers as bnbr
+import SimplicialComplex
 import Z2_linear_algebra as Z2la
 
 # sys.setrecursionlimit(1000)
@@ -43,7 +44,7 @@ class PureSimplicialComplex:
         self.unclosed_ridges = None
         self.closed_faces = None
         self.list_faces = None
-        if facets:
+        if type(facets) == np.ndarray or type(facets)==list:
             self.facets = facets
             if type(facets[0]) == list:
                 self.n = max([len(facet) for facet in self.facets])
@@ -53,20 +54,18 @@ class PureSimplicialComplex:
                         if i not in labels:
                             labels.append(i)
                 self.m = len(labels)
-                self.facets_bin = [face_to_binary(facet, self.m) for facet in self.facets]
+                self.facets_bin = np.array([face_to_binary(facet, self.m) for facet in self.facets])
             else:
-
-
                 self.n = max([MF.bit_count() for MF in facets])
                 self.m = np.bitwise_or.reduce(np.array(facets)).bit_count()
                 np_facets = np.array(facets)
                 or_facets = np.bitwise_or.reduce(np_facets)
-                l=0
+                l = 0
                 while l != self.m:
-                    l=0
+                    l = 0
                     while list_2_pow[l] | or_facets == or_facets:
-                        l+=1
-                    np_facets = (np_facets>>(l+1))<<(l) |( ((np_facets>>(l+1))<<(l+1))^np_facets)
+                        l += 1
+                    np_facets = (np_facets >> (l + 1)) << (l) | (((np_facets >> (l + 1)) << (l + 1)) ^ np_facets)
                     or_facets = np.bitwise_or.reduce(np_facets)
                 # print(or_facets)
                 self.facets_bin = np_facets.tolist()
@@ -96,12 +95,12 @@ class PureSimplicialComplex:
         self.Pic = self.m - self.n
 
     def create_FP(self):
-        if not self.facets_bin:
+        if not type(self.facets_bin):
             self.compute_facets_from_MNF_set()
         if not self.FP_bin:
             self.FP_bin = [dict() for i in range(self.n)]
             for facet_bin in self.facets_bin:
-                self.FP_bin[facet_bin.bit_count()-1][facet_bin] = []
+                self.FP_bin[facet_bin.bit_count() - 1][facet_bin] = []
             # self.FP_bin[-1] = dict.fromkeys(self.facets_bin, [])
             for k in range(self.n - 2, -1, -1):
                 for face in self.FP_bin[k + 1]:
@@ -440,6 +439,25 @@ class PureSimplicialComplex:
                 return binary_to_face(edge_bin, self.m)
         return []
 
+    def relabel_canonical(self):
+        if self.facets[0] != list(range(1, self.n + 1)):
+            permutation_inv = (self.facets[0]).copy()
+            for k in range(1, self.m + 1):
+                if k not in permutation_inv:
+                    permutation_inv.append(k)
+            permutation = [0] * self.m
+            for k in range(1, self.m + 1):
+                permutation[permutation_inv[k - 1]-1] = k
+            new_facets = []
+            for facet in self.facets:
+                new_facets.append([])
+                for v in facet:
+                    new_facets[-1].append(permutation[v - 1])
+                new_facets[-1].sort()
+            new_facets.sort()
+            self.__init__(new_facets)
+
+
     def find_seed(self):
         return ()
 
@@ -453,16 +471,14 @@ def wedge(K, v):
     for MNF in K.MNF_set:
         new_MNF_set.append([])
         for vertex in MNF:
-            if vertex < v:
-                new_MNF_set[-1].append(vertex)
-            elif vertex == v:
+            if vertex == v:
                 new_MNF_set[-1].append(vertex)
                 new_MNF_set[-1].append(K.m + 1)
             else:
                 new_MNF_set[-1].append(vertex)
         new_MNF_set[-1].sort()
     new_MNF_set.sort()
-    return PureSimplicialComplex([], new_MNF_set, K.n + 1)
+    return PureSimplicialComplex(None, new_MNF_set, K.n + 1)
 
 
 def multiple_wedge(K, J):
@@ -474,6 +490,7 @@ def multiple_wedge(K, J):
         for k in range(J[v]):
             new_K = wedge(new_K, v + 1)
             sum_wedge += 1
+    new_K.relabel_canonical()
     return new_K
 
 
@@ -587,6 +604,8 @@ def read_file(filename):
 
 list_n_max = [2, 3, 5, 11]
 seed_DB = []
+
+
 # for pic in range(1, 5):
 #     seed_DB.append([])
 #     if pic == 1:
@@ -1014,7 +1033,7 @@ def find_Z4_homology(K, IDCM):
     n = K.n
     m = K.m
     H = np.zeros(K.n + 1)
-    list_gene_omega = np.array([(IDCM[d] << n) + list_2_pow[d] for d in range(n)], dtype = int)
+    list_gene_omega = np.array([(IDCM[d] << n) + list_2_pow[d] for d in range(n)], dtype=int)
     vect = np.zeros(n)
     list_omega = np.zeros(2 ** n, dtype=int)
     for k in range(2 ** n):
@@ -1039,3 +1058,14 @@ def find_Z4_homology(K, IDCM):
                 else:
                     H[i + 1] += H_omega[i]
     return H
+
+def DCM_bin_to_IDCM_bin(DCM_bin,n):
+    m = len(DCM_bin)
+    M = np.eye(m,dtype=int)
+    for i in range(n+1,m):
+        for j in range(m):
+            if list_2_pow[j]|DCM_bin[i]==DCM_bin[i]:
+                M[j,i]=1
+    return(np.dot(M[:,n:],np.array((list_2_pow[:m-n]))))
+
+
