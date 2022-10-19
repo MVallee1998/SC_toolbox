@@ -319,8 +319,10 @@ def puzzle_algo_V2(K, J, IDCM_mode=False):
         list_indexes_depth.append(list((np.flatnonzero(array_depth == depth))))
 
     def construct_puzzle(depth, position, current_puzzle, list_puzzles,memory_IDCM):
-        if depth > np.count_nonzero(J_array):
+        if depth > min(2,np.count_nonzero(J_array)):
             list_puzzles.append(current_puzzle)
+            if len(list_puzzles)%50==0:
+                print(len(list_puzzles))
         elif position == len(list_indexes_depth[depth]):
             construct_puzzle(depth + 1, 0, current_puzzle, list_puzzles,memory_IDCM)
         else:

@@ -461,6 +461,13 @@ class PureSimplicialComplex:
     def find_seed(self):
         return ()
 
+def join(K,L):
+    K.compute_MNF_set()
+    L.compute_MNF_set()
+    MNF_set_bin_join = K.MNF_set_bin.copy()
+    for MNF in L.MNF_set_bin:
+        MNF_set_bin_join.append(MNF<<K.m)
+    return PureSimplicialComplex(None,[binary_to_face(MNF,K.m+L.m) for MNF in MNF_set_bin_join],K.n+L.n)
 
 def wedge(K, v):
     if v > K.m or v < 1:
