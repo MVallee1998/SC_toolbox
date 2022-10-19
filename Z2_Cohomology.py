@@ -25,7 +25,7 @@ for i0 in range(1, 16):
                     A[3] = sc.int_to_bin_array(i3, 4)
                     GL4.append(A.copy())
 
-
+print(len(GL4))
 def transform_base(base, G):
     new_base = []
     for i in range(len(base)):
@@ -71,8 +71,6 @@ def construct_ideal(K, IDCM_bin, test):
     return GB
 
 
-
-
 for n_seed in range(3, 5):
     results_path = 'final_results/CSPLS_%d_%d' % (n_seed, n_seed + 4)
     list_m_n_seeds = [json.loads(facets_bytes) for facets_bytes in read_file(results_path)]
@@ -103,7 +101,7 @@ for n_seed in range(3, 5):
             for IDCM_1 in isom_cohom_P:
                 GB_1 = construct_ideal(K, IDCM_1, list_gens)
                 for k in range(len(GL4)):
-                    if k % 10 == 0:
+                    if k % 1000 == 0:
                         print((k / len(GL4)) * 100, '%')
                     G = GL4[k]
                     GB_2 = construct_ideal(K, IDCM_2, transform_base(list_gens, G))
@@ -115,6 +113,9 @@ for n_seed in range(3, 5):
                     break
             if not isom:
                 isom_cohom_P.append(IDCM_2.copy())
+                if len(isom_cohom_P)>=len(list_homology):
+                    print("not an example")
+                    break
         print("number of cohomology classes:", len(isom_cohom_P))
 
 print('finished')

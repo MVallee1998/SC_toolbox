@@ -14,7 +14,7 @@ GB_1 = Z2c.construct_ideal(Hexagon, IDCM_1, Z2c.list_poly_gens)
 # GB_2 = Z2c.construct_ideal(Hexagon, IDCM_2, Z2c.list_poly_gens)
 
 for k in range(len(Z2c.GL4)):
-    if k%100==0:
+    if k%1000==0:
         print((k/len(Z2c.GL4))*100,'%')
     G=Z2c.GL4[k]
     new_base=Z2c.transform_base(Z2c.list_poly_gens, G)
