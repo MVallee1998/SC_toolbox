@@ -11,7 +11,7 @@ from sympy.abc import x, y, z
 import json
 P_5 = sc.PureSimplicialComplex([[1,2],[1,5],[2,3],[3,4],[4,5]])
 
-P = sc.multiple_wedge(P_5,[2,0,1,0,0])
+P = sc.multiple_wedge(P_5,[1,1,1,0,0])
 Q = sc.multiple_wedge(P_5,[1,1,1,0,0])
 
 GL3 = []
@@ -40,9 +40,9 @@ def transform_base(base,G):
 
 
 list_IDCM_P = [sc.DCM_bin_to_IDCM_bin(DCM_bin,P.n) for DCM_bin in sc.Garrison_Scott(P)]
-list_IDCM_Q = [sc.DCM_bin_to_IDCM_bin(DCM_bin,Q.n) for DCM_bin in sc.Garrison_Scott(Q)]
+# list_IDCM_Q = [sc.DCM_bin_to_IDCM_bin(DCM_bin,Q.n) for DCM_bin in sc.Garrison_Scott(Q)]
 
-
+# list_IDCM_P = sc.IDCM_Garrison_Scott(P_5)
 
 isom_cohom_P = []
 for i in range(len(list_IDCM_P)):
@@ -62,32 +62,32 @@ for i in range(len(list_IDCM_P)):
         isom_cohom_P.append(IDCM_2.copy())
 print(len(isom_cohom_P))
 
-isom_cohom_Q = []
-for i in range(len(list_IDCM_Q)):
-    print("global: ",(i/len(list_IDCM_Q))*100,'%')
-    isom=False
-    IDCM_2 = list_IDCM_Q[i]
-    for IDCM_1 in isom_cohom_Q:
-        GB_1 = Z2c.construct_ideal(Q,IDCM_1,base)
-        for G in GL3:
-            GB_2 = Z2c.construct_ideal(Q,IDCM_2,transform_base(base,G))
-            if GB_1==GB_2:
-                isom=True
-                break
-        if isom:
-            break
-    if not isom:
-        isom_cohom_Q.append(IDCM_2.copy())
-print(len(isom_cohom_Q))
-
-for i in range(len(isom_cohom_P)):
-    print("global: ",(i/len(isom_cohom_P))*100,'%')
-    IDCM_P = isom_cohom_P[i]
-    GB_P = Z2c.construct_ideal(P,IDCM_P,base)
-    for j in range(len(isom_cohom_Q)):
-        IDCM_Q=isom_cohom_Q[j]
-        for G in GL3:
-            GB_Q = Z2c.construct_ideal(Q,IDCM_Q,transform_base(base,G))
-            if GB_Q==GB_P:
-                print('hello')
-                break
+# isom_cohom_Q = []
+# for i in range(len(list_IDCM_Q)):
+#     print("global: ",(i/len(list_IDCM_Q))*100,'%')
+#     isom=False
+#     IDCM_2 = list_IDCM_Q[i]
+#     for IDCM_1 in isom_cohom_Q:
+#         GB_1 = Z2c.construct_ideal(Q,IDCM_1,base)
+#         for G in GL3:
+#             GB_2 = Z2c.construct_ideal(Q,IDCM_2,transform_base(base,G))
+#             if GB_1==GB_2:
+#                 isom=True
+#                 break
+#         if isom:
+#             break
+#     if not isom:
+#         isom_cohom_Q.append(IDCM_2.copy())
+# print(len(isom_cohom_Q))
+#
+# for i in range(len(isom_cohom_P)):
+#     print("global: ",(i/len(isom_cohom_P))*100,'%')
+#     IDCM_P = isom_cohom_P[i]
+#     GB_P = Z2c.construct_ideal(P,IDCM_P,base)
+#     for j in range(len(isom_cohom_Q)):
+#         IDCM_Q=isom_cohom_Q[j]
+#         for G in GL3:
+#             GB_Q = Z2c.construct_ideal(Q,IDCM_Q,transform_base(base,G))
+#             if GB_Q==GB_P:
+#                 print('hello')
+#                 break
