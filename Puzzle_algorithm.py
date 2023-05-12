@@ -319,7 +319,7 @@ def puzzle_algo_V2(K, J, IDCM_mode=False):
         list_indexes_depth.append(list((np.flatnonzero(array_depth == depth))))
 
     def construct_puzzle(depth, position, current_puzzle, list_puzzles,memory_IDCM):
-        if depth > min(2,np.count_nonzero(J_array)):
+        if depth > np.count_nonzero(J_array):
             list_puzzles.append(current_puzzle)
             if len(list_puzzles)%50==0:
                 print(len(list_puzzles))
@@ -388,19 +388,20 @@ def puzzle_algo_V2(K, J, IDCM_mode=False):
     #     K.compute_MNF_set()
     #     K.MNF_bin_to_MNF()
     #     print("hello", K.MNF_set, len(final_list_puzzles), len(list_IDCM))
-    return len(final_list_puzzles)
+    return final_list_puzzles
 
-# K = sc.PureSimplicialComplex([[1, 2], [1, 6], [2, 3], [3, 4], [4, 5],[5,6]])
+#K = sc.PureSimplicialComplex([[1, 2], [1, 6], [2, 3], [3, 4], [4, 5],[5,6]])
 # wedged_K1 = sc.multiple_wedge(K, [6,1 ,0, 0, 0,0])
 # print(wedged_K1.facets)
 # start = timeit.default_timer()
 # print(len(sc.Garrison_Scott(wedged_K1)))
 # stop = timeit.default_timer()
 # print("Time spent for GS: ", stop - start)
-# start = timeit.default_timer()
-# puzzle_algo_V2(K, [6, 1, 0, 0, 0,0])
-# stop = timeit.default_timer()
-# print("Time spent for puzzle: ", stop - start)
+#start = timeit.default_timer()
+#P = puzzle_algo_V2(K, [1, 1, 1, 0, 0,0])
+#stop = timeit.default_timer()
+#print("Time spent for puzzle: ", stop - start)
+#print(len(P),P)
 
 
 # for n in range(8, 9):

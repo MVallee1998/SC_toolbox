@@ -66,56 +66,56 @@ def construct_ideal(K, IDCM_bin, test):
             if (MNF_bin >> l) & 1:
                 P *= list_monomials[l]
         L.append(P.copy())
-    # print(L)
+    print(L)
     GB = groebner(L, gens=list_gens, domain=GF(2), method='buchberger', order='grevlex')
     return GB
 
 
-for n_seed in range(3, 5):
-    results_path = 'final_results/CSPLS_%d_%d' % (n_seed, n_seed + 4)
-    list_m_n_seeds = [json.loads(facets_bytes) for facets_bytes in read_file(results_path)]
-    for K_facets in list_m_n_seeds:
-        K = sc.PureSimplicialComplex(K_facets)
-        list_IDCM_bin = sc.IDCM_Garrison_Scott(K)
-        if len(list_IDCM_bin) == 1:
-            continue
-        # print('n=',n_seed)
-        list_homology = []
-        for IDCM_bin in list_IDCM_bin:
-            # print(len(construct_ideal(K, IDCM_bin)))
-            H = sc.find_Z4_homology(K, IDCM_bin)
-            test = False
-            for H0 in list_homology:
-                if (H0 == H).all():
-                    test = True
-                    break
-            if not test:
-                list_homology.append(H)
-        if len(list_homology) > 1:
-            print("List of Homology classes:", list_homology)
-        isom_cohom_P = []
-        for i in range(len(list_IDCM_bin)):
-            print("global: ", (i / len(list_IDCM_bin)) * 100, '%')
-            isom = False
-            IDCM_2 = list_IDCM_bin[i]
-            for IDCM_1 in isom_cohom_P:
-                GB_1 = construct_ideal(K, IDCM_1, list_gens)
-                for k in range(len(GL4)):
-                    if k % 1000 == 0:
-                        print((k / len(GL4)) * 100, '%')
-                    G = GL4[k]
-                    GB_2 = construct_ideal(K, IDCM_2, transform_base(list_gens, G))
-                    if GB_1 == GB_2:
-                        print(G)
-                        isom = True
-                        break
-                if isom:
-                    break
-            if not isom:
-                isom_cohom_P.append(IDCM_2.copy())
-                if len(isom_cohom_P)>=len(list_homology):
-                    print("not an example")
-                    break
-        print("number of cohomology classes:", len(isom_cohom_P))
-
-print('finished')
+# for n_seed in range(2, 3):
+#     results_path = 'final_results/CSPLS_%d_%d' % (n_seed, n_seed + 4)
+#     list_m_n_seeds = [json.loads(facets_bytes) for facets_bytes in read_file(results_path)]
+#     for K_facets in list_m_n_seeds:
+#         K = sc.PureSimplicialComplex(K_facets)
+#         list_IDCM_bin = sc.IDCM_Garrison_Scott(K)
+#         if len(list_IDCM_bin) == 1:
+#             continue
+#         # print('n=',n_seed)
+#         list_homology = []
+#         for IDCM_bin in list_IDCM_bin:
+#             # print(len(construct_ideal(K, IDCM_bin)))
+#             H = sc.find_Z4_homology(K, IDCM_bin)
+#             test = False
+#             for H0 in list_homology:
+#                 if (H0 == H).all():
+#                     test = True
+#                     break
+#             if not test:
+#                 list_homology.append(H)
+#         if len(list_homology) > 1:
+#             print("List of Homology classes:", list_homology)
+#         isom_cohom_P = []
+#         for i in range(len(list_IDCM_bin)):
+#             print("global: ", (i / len(list_IDCM_bin)) * 100, '%')
+#             isom = False
+#             IDCM_2 = list_IDCM_bin[i]
+#             for IDCM_1 in isom_cohom_P:
+#                 GB_1 = construct_ideal(K, IDCM_1, list_gens)
+#                 for k in range(len(GL4)):
+#                     if k % 1000 == 0:
+#                         print((k / len(GL4)) * 100, '%')
+#                     G = GL4[k]
+#                     GB_2 = construct_ideal(K, IDCM_2, transform_base(list_gens, G))
+#                     if GB_1 == GB_2:
+#                         print(G)
+#                         isom = True
+#                         break
+#                 if isom:
+#                     break
+#             if not isom:
+#                 isom_cohom_P.append(IDCM_2.copy())
+#                 if len(isom_cohom_P)>=len(list_homology):
+#                     print("not an example")
+#                     break
+#         print("number of cohomology classes:", len(isom_cohom_P))
+#
+# print('finished')

@@ -2,8 +2,8 @@ import SimplicialComplex as sc
 import json
 import timeit
 
-m = 15
-n = 11
+m = 7
+n = 4
 p = m - n
 raw_results_path = 'raw_results/PLS_15_11_non_seeds'
 final_results_path = 'final_results/PLS_%d_%d_from_non_seeds' % (m, n)
@@ -23,7 +23,7 @@ def text(result, path):
     t.close()
 
 
-results = [json.loads(facets_bytes) for facets_bytes in read_file(raw_results_path)]
+results = [json.loads(facets_bytes) for facets_bytes in read_file(final_results_path)]
 
 N = len(results)
 

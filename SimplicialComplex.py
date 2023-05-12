@@ -1,7 +1,9 @@
 import json
+from tqdm import tqdm
 from itertools import combinations, permutations
 
 import numpy as np
+from functools import reduce
 import numpy.polynomial as npp
 
 import Betti_numbers as bnbr
@@ -1021,11 +1023,11 @@ def enumerate_SL(n):
     return SLn
 
 
-def display_char_funct(char_funct, n):
+def char_funct_bin_to_numpy(char_funct, n):
     char_funct_array = np.zeros((n, len(char_funct)))
     for k in range(len(char_funct)):
         char_funct_array[:, k] = int_to_bin_array(char_funct[k], n)
-    print(char_funct_array[:, n:])
+    return(char_funct_array)
 
 
 def give_next_vect(vect, base):
@@ -1074,5 +1076,186 @@ def DCM_bin_to_IDCM_bin(DCM_bin,n):
             if list_2_pow[j]|DCM_bin[i]==DCM_bin[i]:
                 M[j,i]=1
     return(np.dot(M[:,n:],np.array((list_2_pow[:m-n]))))
+
+
+def enumerate_chordless_cycles(A,i,j,list_cycles):
+    def enumerate_chordless_cycles_rec(A, i0, j0, i, j, current_cycle, list_cycles, horizontal):
+        if horizontal:
+            for next_j in np.where(np.logical_and((current_cycle==0).all(axis=0),(A-current_cycle)[i,:]==1))[0]:
+                next_cycle = np.copy(current_cycle)
+                next_cycle[i, next_j] = 1
+                enumerate_chordless_cycles_rec(A, i0, j0, i, next_j, next_cycle, list_cycles, False)
+        else:
+            if j==j0 and (A-current_cycle)[i0,j]==1:
+                current_cycle[i0,j0]=1
+                filter_i = (current_cycle==1).any(axis=1)
+                filter_j = (current_cycle==1).any(axis=0)
+                if (current_cycle[filter_i,:][:,filter_j]==A[filter_i,:][:,filter_j]).all():
+                    list_cycles.append(current_cycle)
+            else:
+                for next_i in np.where(np.logical_and((current_cycle==0).all(axis=1),(A-current_cycle)[:,j]==1))[0]:
+                    next_cycle = np.copy(current_cycle)
+                    next_cycle[next_i,j] = 1
+                    enumerate_chordless_cycles_rec(A, i0, j0, next_i, j, next_cycle, list_cycles, True)
+    n,m = A.shape
+    enumerate_chordless_cycles_rec(A,i,j,i,j,np.zeros((n,m)),list_cycles,True)
+
+def lifting_algo(original_facets,char_map):
+    # INITIALIZATION #
+    n,m = char_map.shape
+    relabeled_facets = np.zeros((len(original_facets),m),dtype=bool)
+    facets = [original_facets[0]]
+    appeared = np.ones(m+1,dtype = bool)
+    appeared[:n+1] = False
+    unused_facets = []
+    for k in range(1,len(original_facets)):
+        facet = original_facets[k]
+        if np.count_nonzero(appeared[facet])<=1:
+            facets.append(facet)
+            appeared[facet] = False
+        else:
+            unused_facets.append(facet)
+    for facet in unused_facets:
+        facets.append(facet)
+    for k in range(len(facets)):
+        facet = facets[k]
+        for v in facet:
+            relabeled_facets[k][v-1] = True
+    appeared = [False]*m
+    ordered_vertices = []
+    for facet in relabeled_facets:
+        for v in np.where(facet)[0]:
+            if not appeared[v]:
+                appeared[v] = True
+                ordered_vertices.append(v)
+    ordered_vertices = np.array(ordered_vertices)
+    # END OF INITIALIZATION #
+    tree = np.zeros((n,m))
+    tree[:,:n+1] = char_map[:,:n+1]
+    for k in range(n+1,m):
+        tree[(tree[:,n:k]==0).all(axis=1),k] = char_map[(tree[:,n:k]==0).all(axis=1),k]
+        rows_having_an_edge_previously = (tree[:, n:k] == 1).any(axis=1)
+        rows_having_an_edge_now = (char_map[:,k]==1)
+        if np.logical_and(rows_having_an_edge_previously,rows_having_an_edge_now).any():
+            index = np.where(np.logical_and(rows_having_an_edge_previously,rows_having_an_edge_now))[0][0]
+            tree[index,k]=1
+    undecided_edges = char_map - tree
+    relabelling = char_map - undecided_edges
+    stack_cycles_conflict = []
+    for facet in relabeled_facets:
+        facet_subgraph = np.zeros((n,m))
+        facet_subgraph[:,facet] = char_map[:,facet]
+        undecided_edges_subgraph = np.zeros((n,m))
+        undecided_edges_subgraph[:, facet] = undecided_edges[:,facet]
+        positions = np.where(undecided_edges_subgraph)
+        for k in range(len(positions[0])):
+            i = positions[0][k]
+            j = positions[1][k]
+            list_cycles = []
+            enumerate_chordless_cycles(facet_subgraph,i,j,list_cycles)
+            for cycle in list_cycles:
+                if np.count_nonzero(np.multiply(cycle,undecided_edges_subgraph))==1:
+                    if relabelling[i,j]==0:
+                        print("completing cycle:")
+                        print(cycle)
+                        if np.sum(np.multiply(cycle,relabelling))%4==1:
+                            relabelling[i,j] = -1
+                        elif np.sum(np.multiply(cycle,relabelling))%4==3:
+                            relabelling[i,j] = 1
+                        else:
+                            print("bizarre")
+                    elif np.sum(np.multiply(cycle,relabelling))%4==2:
+                        print("Conflict middle!")
+                else:
+                    stack_cycles_conflict.append(cycle)
+    if (np.abs(relabelling)==char_map).all():
+        conflict = False
+        for cycle in stack_cycles_conflict:
+            if np.count_nonzero(np.multiply(cycle, relabelling))%4==2:
+                conflict = True
+                print(cycle)
+                break
+        if conflict:
+            print("Conflict end!")
+            print(undecided_edges)
+            print(char_map)
+            print(facets)
+
+    return(relabelling)
+
+def integer_det(M):
+    M = [row[:] for row in M] # make a copy to keep original M unmodified
+    N, sign, prev = len(M), 1, 1
+    for i in range(N-1):
+        if M[i][i] == 0: # swap with another row having nonzero i's elem
+            swapto = next( (j for j in range(i+1,N) if M[j][i] != 0), None )
+            if swapto is None:
+                return 0 # all M[*][i] are zero => zero determinant
+            M[i], M[swapto], sign = M[swapto], M[i], -sign
+        for j in range(i+1,N):
+            for k in range(i+1,N):
+                assert ( M[j][k] * M[i][i] - M[j][i] * M[i][k] ) % prev == 0
+                M[j][k] = ( M[j][k] * M[i][i] - M[j][i] * M[i][k] ) // prev
+        prev = M[i][i]
+    return sign * M[-1][-1]
+def integer_det_mod_2(M):
+    M = [row[:] for row in M] # make a copy to keep original M unmodified
+    N, sign, prev = len(M), 1, 1
+    for i in range(N-1):
+        if M[i][i] == 0: # swap with another row having nonzero i's elem
+            swapto = next( (j for j in range(i+1,N) if M[j][i] != 0), None )
+            if swapto is None:
+                return 0 # all M[*][i] are zero => zero determinant
+            M[i], M[swapto], sign = M[swapto], M[i], -sign
+        for j in range(i+1,N):
+            for k in range(i+1,N):
+                M[j][k] = (( M[j][k] * M[i][i] - M[j][i] * M[i][k] ) * prev) % 2
+        prev = M[i][i]
+    return M[-1][-1]
+
+
+def lifting_binary_matroid(M):
+    n,m = M.shape
+    bases = []
+    for iter in combinations(range(m),n):
+        if integer_det_mod_2(M[:, iter]) == 1:
+            bases.append(list(iter))
+    tree = np.zeros((n,m))
+    tree[:,:n] = M[:,:n]
+    for k in range(n,m):
+        tree[(tree[:,n:k]==0).all(axis=1),k] = M[(tree[:,n:k]==0).all(axis=1),k]
+        rows_having_an_edge_previously = (tree[:, n:k] == 1).any(axis=1)
+        rows_having_an_edge_now = (M[:,k]==1)
+        if np.logical_and(rows_having_an_edge_previously,rows_having_an_edge_now).any():
+            index = np.where(np.logical_and(rows_having_an_edge_previously,rows_having_an_edge_now))[0][0]
+            tree[index,k]=1
+    undecided_edges = M - tree
+    positions = np.where(undecided_edges)
+    list_positions=[(positions[0][k],positions[1][k]) for k in range(len(positions[0]))]
+    N = len(list_positions)
+    for k in range(0,N+1):
+        for iter in combinations(list_positions,k):
+            N = M.copy()
+            for pair in iter:
+                N[pair[0],pair[1]] = -1
+            is_a_lift = True
+            list_problematic_bases=[]
+            list_dets=[]
+            for base in bases:
+                d=integer_det(N[:,base])
+                if abs(d)!=1:
+                    is_a_lift= False
+                    list_problematic_bases.append(base)
+                    list_dets.append(d)
+                    # break
+            if len(list_problematic_bases)<=5:
+                print(np.array(range(m)))
+                print(N)
+                print(list_problematic_bases)
+                print(list_dets)
+            if is_a_lift:
+                return True
+    return False
+
 
 
