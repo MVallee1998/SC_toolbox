@@ -1,0 +1,12 @@
+import SimplicialComplex as sc
+import json
+import timeit
+from itertools import combinations
+import numpy as np
+
+# K = sc.PureSimplicialComplex([[1,2],[1,5],[2,3],[3,4],[4,5]])
+# K.compute_MNF_set()
+# print(K.MNF_set_bin)
+
+
+print(len(sc.enumerate_non_isom_bin_matroids(6,11)))

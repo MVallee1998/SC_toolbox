@@ -1,20 +1,21 @@
 GL4 = GL(4,GF(2))
 P.<x,y,z,t> = PolynomialRing (GF(2) ,order ='degrevlex')
+import numpy as np
 
 list_poly_gens = [x,y,z,t]
 
 
 print(len(GL4))
 def transform_base(base, G):
-    # new_base = []
-    # for i in range(len(base)):
-    #     for j in range((len(base))):
-    #         if G[i, j] == 1:
-    #             if len(new_base) < i + 1:
-    #                 new_base.append(base[j])
-    #             else:
-    #                 new_base[-1] += base[j]
-    return G.direct_product(base)
+    new_base = []
+    for i in range(len(base)):
+        for j in range((len(base))):
+            if G[i][j] == 1:
+                if len(new_base) < i + 1:
+                    new_base.append(base[j])
+                else:
+                    new_base[-1] += base[j]
+    return new_base
 
 
 def read_file(filename):
@@ -53,7 +54,7 @@ GB_1 = construct_ideal(Hexagon_MNF,IDCM_1,list_poly_gens,6,2)
 for k in range(len(GL4)):
     if k%1000==0:
         print((k/len(GL4))*100,'%')
-    G=GL4[k]
+    G=GL4[k].list()
     new_base=transform_base(list_poly_gens, G)
     GB_2 = construct_ideal(Hexagon_MNF, IDCM_2, new_base,6,2)
     if GB_1 == GB_2:

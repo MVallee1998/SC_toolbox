@@ -100,11 +100,11 @@ class PureSimplicialComplex:
         if not type(self.facets_bin):
             self.compute_facets_from_MNF_set()
         if not self.FP_bin:
-            self.FP_bin = [dict() for i in range(self.n)]
+            self.FP_bin = [dict() for i in range(self.n+1)]
             for facet_bin in self.facets_bin:
                 self.FP_bin[facet_bin.bit_count() - 1][facet_bin] = []
             # self.FP_bin[-1] = dict.fromkeys(self.facets_bin, [])
-            for k in range(self.n - 2, -1, -1):
+            for k in range(self.n - 1, -1, -1):
                 for face in self.FP_bin[k + 1]:
                     for element in list_2_pow[:self.m]:
                         if element | face == face:
@@ -147,7 +147,7 @@ class PureSimplicialComplex:
             all_non_faces[-1] = dict.fromkeys(
                 [face_to_binary(list(facet_iter), self.m) for facet_iter in
                  combinations(range(1, self.m + 1), self.n + 1)])
-            for k in range(self.n - 1, -1, -1):  # dimension
+            for k in range(self.n-1 , -1, -1):  # dimension
                 for face in all_non_faces[k + 1]:  # treat every face of dimension k
                     for element in list_2_pow[:self.m]:  # construct the (k-1)-subfaces
                         if element | face == face:
@@ -517,7 +517,7 @@ def give_IDCM_up_to_isom(K_J, J):
                     r_neighbors &= MNF_bin
 
 
-def are_isom(K1, K2):
+def are_isom(K1:PureSimplicialComplex, K2:PureSimplicialComplex):
     if K1.n != K2.n or K1.m != K2.m or len(K1.facets_bin) != len(K2.facets_bin):
         return False
     if K1.facets_bin == K2.facets_bin:
@@ -611,8 +611,8 @@ def read_file(filename):
     return data
 
 
-list_n_max = [2, 3, 5, 11]
-seed_DB = []
+# list_n_max = [2, 3, 5, 11]
+# seed_DB = []
 
 
 # for pic in range(1, 5):
@@ -934,7 +934,7 @@ def enumerate_char_funct_orbits(n, m):
         if min_new_char_funct < mini:
             mini = min_new_char_funct.copy()
     eq_classes_ref.append(mini)
-    for i in range(1, len(list_char_funct)):
+    for i in tqdm(range(1, len(list_char_funct))):
         is_a_new_repres = True
         mini = sorted(list_char_funct_bin[i])
         for A in SLn:
@@ -958,15 +958,6 @@ def enumerate_char_funct_orbits(n, m):
             eq_classes_ref.append(mini)
     return (eq_classes_repres)
 
-
-def enumerate_all_lambdas(n, m):
-    list_char_funct = []
-    for combi_iter in combinations([3, 5, 6, 9, 10, 12, 7, 11, 13, 14, 15], n):
-        char_funct = list(combi_iter) + list_2_pow[:m - n]
-        list_char_funct.append(char_funct)
-    return list_char_funct
-
-
 def find_facets_compatible_with_lambda(char_function, m, n):
     Pic = m - n
     cofacets = []
@@ -982,6 +973,24 @@ def find_facets_compatible_with_lambda(char_function, m, n):
     facets.sort()
     return facets
 
+def enumerate_non_isom_bin_matroids(n,m): #Coputes the binary matroids up to isomorphisms
+    list_lambdas = enumerate_char_funct_orbits(n,m)
+    print(len(list_lambdas))
+    list_M = [PureSimplicialComplex(find_facets_compatible_with_lambda(char_map,m,n)) for char_map in list_lambdas]
+    list_nonisom_matroids = []
+    for M1 in list_M:
+        is_isom = False
+        for M2 in list_nonisom_matroids:
+            if are_isom(M1,M2):
+                is_isom = True
+                break
+        if not is_isom:
+            list_nonisom_matroids.append(M1)
+            # M1.compute_MNF_set()
+            # M1.MNF_bin_to_MNF()
+            # print(M1.MNF_set)
+    list_facets_nonisom_matroids = [M.facets_bin for M in list_nonisom_matroids]
+    return list_facets_nonisom_matroids
 
 def text(result):
     name = '/GL4'
