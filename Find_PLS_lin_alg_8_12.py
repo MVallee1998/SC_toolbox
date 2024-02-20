@@ -1,7 +1,7 @@
 import linear_alg_method as lam
 import timeit
 import numpy as np
-import numpy as cp
+import cupy as cp
 import SimplicialComplex as sc
 import numba as nb
 from itertools import combinations
@@ -17,7 +17,7 @@ m = 12
 n = 8
 number_steps = 3
 
-raw_results_PATH = 'raw_results/PLS_%d_%d_0' % (m, n)
+raw_results_PATH = 'raw_results/weak_psdmfd_%d_%d' % (m, n)
 
 
 def text(results, path):
@@ -211,12 +211,10 @@ def new_f(facets):
     return results
 
 
-list_char_funct = sc.enumerate_char_funct_orbits(n, m)
-print(len(list_char_funct))
-for char_funct in list_char_funct[:1]:
-    facets = sc.find_facets_compatible_with_lambda(char_funct, m, n)
+for facets in sc.enumerate_non_isom_bin_matroids(n,m):
     results = new_f(facets)
     print(len(results))
-    # text(results, raw_results_PATH)
+    text(results, raw_results_PATH)
 
 print("Finished")
+

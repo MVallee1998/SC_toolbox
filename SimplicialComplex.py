@@ -58,8 +58,8 @@ class PureSimplicialComplex:
                 self.m = len(labels)
                 self.facets_bin = np.array([face_to_binary(facet, self.m) for facet in self.facets])
             else:
-                self.n = max([MF.bit_count() for MF in facets])
-                self.m = np.bitwise_or.reduce(np.array(facets)).bit_count()
+                self.n = max([bin(MF).count("1") for MF in facets])
+                self.m = bin(np.bitwise_or.reduce(np.array(facets))).count("1")
                 np_facets = np.array(facets)
                 or_facets = np.bitwise_or.reduce(np_facets)
                 l = 0
@@ -102,7 +102,7 @@ class PureSimplicialComplex:
         if not self.FP_bin:
             self.FP_bin = [dict() for i in range(self.n+1)]
             for facet_bin in self.facets_bin:
-                self.FP_bin[facet_bin.bit_count() - 1][facet_bin] = []
+                self.FP_bin[bin(facet_bin).count("1") - 1][facet_bin] = []
             # self.FP_bin[-1] = dict.fromkeys(self.facets_bin, [])
             for k in range(self.n - 1, -1, -1):
                 for face in self.FP_bin[k + 1]:
@@ -973,7 +973,7 @@ def find_facets_compatible_with_lambda(char_function, m, n):
     facets.sort()
     return facets
 
-def enumerate_non_isom_bin_matroids(n,m): #Coputes the binary matroids up to isomorphisms
+def enumerate_non_isom_bin_matroids(n,m): #Computes the binary matroids up to isomorphisms
     list_lambdas = enumerate_char_funct_orbits(n,m)
     print(len(list_lambdas))
     list_M = [PureSimplicialComplex(find_facets_compatible_with_lambda(char_map,m,n)) for char_map in list_lambdas]
