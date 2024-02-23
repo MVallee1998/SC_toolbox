@@ -14,7 +14,7 @@ G_vector = [2, 6, 10, 20, 30, 50, 70, 105, 140, 196, 252]
 np_arrange = np.arange(0, 256)
 np_arrange_odd = 2 * np.arange(0, 127) + 1
 m = 11
-n = 7
+n = 7   
 number_steps = 4
 
 raw_results_PATH = 'raw_results/weak_psdmfd_%d_%d' % (m, n)
@@ -231,7 +231,7 @@ list_char_funct = sc.enumerate_char_funct_orbits(n, m)
 print(len(list_char_funct))
 for k in range(len(list_char_funct)):
     char_funct = list_char_funct[k]
-    print((k/len(list_char_funct))*10,'%')
+    print((k/len(list_char_funct))*100,'%')
     facets = sc.find_facets_compatible_with_lambda(char_funct, m, n)
     results = new_f(facets)
     text(results, raw_results_PATH)
