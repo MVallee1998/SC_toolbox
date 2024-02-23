@@ -3,11 +3,11 @@ import json
 import timeit
 import tqdm
 
-m = 8
-n = 4
+m = 10
+n = 6
 p = m - n
-raw_results_path = 'raw_results/all_weak_psdmfd_%d_%d.out' % (m, n)
-final_results_path = 'final_results/all_weak_psdmfd_%d_%d' % (m, n)
+raw_results_path = 'raw_results/weak_psdmfd_%d_%d' % (m, n)
+final_results_path = 'final_results/weak_psdmfd_%d_%d' % (m, n)
 
 
 def read_file(filename):
