@@ -210,7 +210,10 @@ def new_f(facets):
     print("Time spent: ", stop - start, "number of lin comb computed: ", counter*base_vect_to_mult_array.shape[0])
     return results
 
-for facets in sc.enumerate_non_isom_bin_matroids(n,m):
+list_char_funct = sc.enumerate_char_funct_orbits(n, m)
+print(len(list_char_funct))
+for char_funct in list_char_funct:
+    facets = sc.find_facets_compatible_with_lambda(char_funct, m, n)
     results = new_f(facets)
     print(len(results))
     text(results, raw_results_PATH)

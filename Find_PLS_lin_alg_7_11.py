@@ -15,7 +15,7 @@ np_arrange = np.arange(0, 256)
 np_arrange_odd = 2 * np.arange(0, 127) + 1
 m = 11
 n = 7
-number_steps = 3
+number_steps = 4
 
 raw_results_PATH = 'raw_results/weak_psdmfd_%d_%d' % (m, n)
 
@@ -211,7 +211,10 @@ def new_f(facets):
     return results
 
 
-for facets in sc.enumerate_non_isom_bin_matroids(n,m):
+list_char_funct = sc.enumerate_char_funct_orbits(n, m)
+print(len(list_char_funct))
+for char_funct in list_char_funct:
+    facets = sc.find_facets_compatible_with_lambda(char_funct, m, n)
     results = new_f(facets)
     print(len(results))
     text(results, raw_results_PATH)

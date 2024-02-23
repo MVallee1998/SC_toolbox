@@ -13,8 +13,8 @@ G_vector = [2, 6, 10, 20, 30, 50, 70, 105, 140, 196, 252]
 
 np_arrange = np.arange(0, 256)
 np_arrange_odd = 2 * np.arange(0, 127) + 1
-m = 6
-n = 2
+m = 11
+n = 7
 number_steps = 4
 
 raw_results_PATH = 'raw_results/weak_psdmfd_%d_%d' % (m, n)
@@ -227,15 +227,14 @@ def new_f(facets):
 
 
 
-# list_char_funct = sc.enumerate_char_funct_orbits(n, m)
-# print(len(list_char_funct))
-# for k in range(len(list_char_funct)):
-#     char_funct = list_char_funct[k]
-#     if k%10==0:
-#         print((k/len(list_char_funct))*10,'%')
-#     facets = sc.find_facets_compatible_with_lambda(char_funct, m, n)
-#     results = new_f(facets)
-    # text(results, raw_results_PATH)
+list_char_funct = sc.enumerate_char_funct_orbits(n, m)
+print(len(list_char_funct))
+for k in range(len(list_char_funct)):
+    char_funct = list_char_funct[k]
+    print((k/len(list_char_funct))*10,'%')
+    facets = sc.find_facets_compatible_with_lambda(char_funct, m, n)
+    results = new_f(facets)
+    text(results, raw_results_PATH)
 
 
 # for facets in sc.enumerate_non_isom_bin_matroids(n,m):
@@ -257,16 +256,16 @@ def new_f(facets):
 #     print((n,m), global_end - global_start)
 
 
-for n in range(2, 6):
-    m = n + 4
-    number_steps = min(n,3)
-    MFset = []
-    print(n, m)
-    for MF in combinations(range(1, m + 1), n):
-        MFset.append(sc.face_to_binary(MF, m))
-    results = new_f(MFset)
-    raw_results_PATH = 'raw_results/all_weak_psdmfd_%d_%d' % (m, n)
-    text(results, raw_results_PATH)
+# for n in range(2, 6):
+#     m = n + 4
+#     number_steps = min(n,3)
+#     MFset = []
+#     print(n, m)
+#     for MF in combinations(range(1, m + 1), n):
+#         MFset.append(sc.face_to_binary(MF, m))
+#     results = new_f(MFset)
+#     raw_results_PATH = 'raw_results/all_weak_psdmfd_%d_%d' % (m, n)
+#     text(results, raw_results_PATH)
 
 # print("Total time spent", global_end - global_start)
 
