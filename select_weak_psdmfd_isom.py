@@ -1,12 +1,13 @@
 import SimplicialComplex as sc
 import json
 import timeit
+import tqdm
 
-m = 11
-n = 7
+m = 8
+n = 4
 p = m - n
-raw_results_path = 'raw_results/weak_psdmfd_%d_%d' % (m, n)
-final_results_path = 'final_results/weak_psdmfd_%d_%d_test' % (m, n)
+raw_results_path = 'raw_results/all_weak_psdmfd_%d_%d.out' % (m, n)
+final_results_path = 'final_results/all_weak_psdmfd_%d_%d' % (m, n)
 
 
 def read_file(filename):
@@ -27,26 +28,14 @@ results = [json.loads(facets_bytes) for facets_bytes in read_file(raw_results_pa
 
 N = len(results)
 
-i0 = 0
-K_i0 = sc.PureSimplicialComplex(results[i0])
-while K_i0.n!=n or K_i0.m!=m:
-    i0 += 1
-    K_i0 = sc.PureSimplicialComplex(results[i0])
-K1 = sc.PureSimplicialComplex(results[i0])
-eq_classes = [K1]
+eq_classes = []
 # for facets_isom in [json.loads(facets_bytes) for facets_bytes in read_file(initial_isom_path)]:
 #     eq_classes.append(sc.PureSimplicialComplex(facets_isom))
-start_sub = timeit.default_timer()
-start = start_sub
-for i in range(N):
-    stop_sub = timeit.default_timer()
+for i in tqdm.tqdm(range(N)):
     K2 = sc.PureSimplicialComplex(results[i])
-    if not K2.is_a_seed():
-        continue
+    # if not K2.is_a_seed():
+    #     continue
     is_isom = False
-    if i%10==0:
-        print("Time spent for 10", stop_sub - start_sub, (i / N) * 100, "%", len(eq_classes))
-    start_sub = timeit.default_timer()
     for K1 in eq_classes:
         if sc.are_isom(K1, K2):
             is_isom = True
@@ -55,8 +44,6 @@ for i in range(N):
         eq_classes.append(K2)
     else:
         del K2
-stop = timeit.default_timer()
-print(len(eq_classes), " isomorphic classes found", " Time spent:", stop - start)
 
 # N = len(eq_classes)
 #
@@ -79,5 +66,3 @@ for K in eq_classes:
     data_to_text.append(K.facets_bin)
 
 text(data_to_text, final_results_path)
-stop = timeit.default_timer()
-print("Final result saved.", " Time spent:", stop - start)

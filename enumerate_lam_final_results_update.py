@@ -2,11 +2,11 @@ import SimplicialComplex as sc
 import json
 import timeit
 
-m = 15
-n = 11
+m = 11
+n = 7
 p = m - n
-raw_results_path = 'raw_results/PLS_15_11'
-final_results_path = 'final_results/PLS_%d_%d_test' % (m, n)
+raw_results_path = 'raw_results/weak_psdmfd_%d_%d' % (m,n)
+final_results_path = 'final_results/PLS_%d_%d' % (m, n)
 
 
 def read_file(filename):
@@ -27,13 +27,13 @@ results = [json.loads(facets_bytes) for facets_bytes in read_file(raw_results_pa
 
 N = len(results)
 
-i0 = 0
-K_i0 = sc.PureSimplicialComplex(results[i0])
-while not K_i0.is_a_seed() or not K_i0.is_promising() or not K_i0.is_Z2_homology_sphere() or not K_i0.is_closed():
-    i0 += 1
-    K_i0 = sc.PureSimplicialComplex(results[i0])
-K1 = sc.PureSimplicialComplex(results[i0])
-eq_classes = [K1]
+# i0 = 0
+# K_i0 = sc.PureSimplicialComplex(results[i0])
+# while not K_i0.is_a_seed() or not K_i0.is_promising() or not K_i0.is_Z2_homology_sphere() or not K_i0.is_closed():
+#     i0 += 1
+#     K_i0 = sc.PureSimplicialComplex(results[i0])
+# K1 = sc.PureSimplicialComplex(results[i0])
+eq_classes = []
 # for facets_isom in [json.loads(facets_bytes) for facets_bytes in read_file(initial_isom_path)]:
 #     eq_classes.append(sc.PureSimplicialComplex(facets_isom))
 start_sub = timeit.default_timer()

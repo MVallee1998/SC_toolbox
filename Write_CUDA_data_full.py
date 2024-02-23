@@ -18,8 +18,8 @@ G_vector = [2, 6, 10, 20, 30, 50, 70, 105, 140, 196, 252]
 
 np_arrange = np.arange(0, 256)
 np_arrange_odd = 2 * np.arange(0, 127) + 1
-m = 14
-n = 10
+m = 10
+n = 6
 p=m-n
 number_steps = 1
 
@@ -191,14 +191,11 @@ def new_f(facets,index_data):
             base_vect_to_mult_array[k] += list_to_pick_lin_comb[l][vect[l], :]
     np_facets = cp.array(facets)
     A = cp.asarray(np.transpose(list_v),dtype=np.uint)
-
     A_to_C = np.dot(A,pow_2[:nbr_results])
     t = open('CUDA_DATA/Data_'+str(n)+'_'+str(m)+'_'+str(index_data)+'.cpp', mode='a', encoding='utf-8')
     t.write('#define N '+str(n))
     t.write('\n')
     t.write('#define NBR_FACETS '+str(nbr_facets))
-    t.write('\n')
-    t.write('#define NBR_RIDGES '+str(nbr_ridges))
     t.write('\n')
     t.write('#define NBR_GENERATORS '+str(nbr_results))
     t.write('\n')
@@ -257,12 +254,9 @@ def new_f(facets,index_data):
     t.close()
     print(list_groups,np.sum(list_groups))
 
-list_char_funct = sc.enumerate_char_funct_orbits(n, m)
-print(len(list_char_funct))
-for k in range(len(list_char_funct)):
-    char_funct = list_char_funct[k]
-    facets = sc.find_facets_compatible_with_lambda(char_funct, m, n)
-    new_f(facets,k)
 
-
+MFset = []
+for MF in combinations(range(1, m + 1), n):
+    MFset.append(sc.face_to_binary(MF, m))
+new_f(MFset,0)
 print("Finished")

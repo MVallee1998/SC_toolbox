@@ -611,22 +611,22 @@ def read_file(filename):
     return data
 
 
-# list_n_max = [2, 3, 5, 11]
-# seed_DB = []
+list_n_max = [2, 3, 5, 11]
+seed_DB = []
 
 
-# for pic in range(1, 5):
-#     seed_DB.append([])
-#     if pic == 1:
-#         start = 1
-#     else:
-#         start = 2
-#     for n in range(start, list_n_max[pic - 1]):
-#         seed_DB[-1].append([])
-#         results_path = 'final_results/CSPLS_%d_%d' % (n, n + pic)
-#         list_m_n_seeds = [json.loads(facets_bytes) for facets_bytes in read_file(results_path)]
-#         for facets_seed in list_m_n_seeds:
-#             seed_DB[-1][-1].append(PureSimplicialComplex(facets_seed))
+for pic in range(1, 5):
+    seed_DB.append([])
+    if pic == 1:
+        start = 1
+    else:
+        start = 2
+    for n in range(start, list_n_max[pic - 1]):
+        seed_DB[-1].append([])
+        results_path = 'final_results/CSPLS_%d_%d' % (n, n + pic)
+        list_m_n_seeds = [json.loads(facets_bytes) for facets_bytes in read_file(results_path)]
+        for facets_seed in list_m_n_seeds:
+            seed_DB[-1][-1].append(PureSimplicialComplex(facets_seed))
 
 
 def is_PLS_new(K):
@@ -647,11 +647,11 @@ def is_PLS_new(K):
                 break
         if not is_PLS:
             break
-    if is_PLS:
-        K = list_of_links[0]
-        K.compute_MNF_set()
-        K.MNF_bin_to_MNF()
-        print(K.MNF_set)
+    # if is_PLS:
+    #     K = list_of_links[0]
+    #     K.compute_MNF_set()
+    #     K.MNF_bin_to_MNF()
+    #     print(K.MNF_set)
     return is_PLS
 
 

@@ -198,8 +198,6 @@ def new_f(facets,index_data):
     t.write('\n')
     t.write('#define NBR_FACETS '+str(nbr_facets))
     t.write('\n')
-    t.write('#define NBR_RIDGES '+str(nbr_ridges))
-    t.write('\n')
     t.write('#define NBR_GENERATORS '+str(nbr_results))
     t.write('\n')
     t.write('#define NBR_X0 '+str(np.prod(array_number_lines[2:8])))
@@ -257,12 +255,8 @@ def new_f(facets,index_data):
     t.close()
     print(list_groups,np.sum(list_groups))
 
-list_char_funct = sc.enumerate_char_funct_orbits(n, m)
-print(len(list_char_funct))
-for k in range(len(list_char_funct)):
-    char_funct = list_char_funct[k]
-    facets = sc.find_facets_compatible_with_lambda(char_funct, m, n)
-    new_f(facets,k)
 
-
+list_facets = sc.enumerate_non_isom_bin_matroids(n,m)
+for k in range(len(list_facets)):
+    new_f(list_facets[k],k)
 print("Finished")

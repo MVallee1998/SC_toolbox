@@ -13,11 +13,11 @@ G_vector = [2, 6, 10, 20, 30, 50, 70, 105, 140, 196, 252]
 
 np_arrange = np.arange(0, 256)
 np_arrange_odd = 2 * np.arange(0, 127) + 1
-m = 12
-n = 8
+m = 6
+n = 2
 number_steps = 4
 
-raw_results_PATH = 'raw_results/PLS_%d_%d_0' % (m, n)
+raw_results_PATH = 'raw_results/weak_psdmfd_%d_%d' % (m, n)
 
 
 def text(results, path):
@@ -173,10 +173,11 @@ def new_f(facets):
                 current_line += 1
         number_cases *= nbr_lines
     base_vect_to_mult_array = np.zeros((np.prod(array_number_lines[:number_steps]), nbr_results))
-    base_vect_to_mult_array[:, 0] = 1
+    base_vect_to_mult_array[:, 0] = 1 # le premier générateur est toujours utilisé
     print(nbr_results,array_number_lines, np.sum(array_number_lines == 11), np.format_float_scientific(number_cases))
+    # On crée le bloc de gauche des la matrice
     vect = np.zeros(number_steps, dtype=int)
-    for k in range(1, np.prod(array_number_lines[:number_steps])):
+    for k in range(1, np.prod(array_number_lines[:number_steps])): # le premier c'est 0
         give_next_vect(vect, array_number_lines[:number_steps])
         for l in range(number_steps):
             base_vect_to_mult_array[k] += list_to_pick_lin_comb[l][vect[l], :]
@@ -225,15 +226,21 @@ def new_f(facets):
 # print(len(results))
 
 
-list_char_funct = sc.enumerate_char_funct_orbits(n, m)
-print(len(list_char_funct))
-for k in range(1):
-    char_funct = list_char_funct[k]
-    if k%10==0:
-        print((k/len(list_char_funct))*100,'%')
-    facets = sc.find_facets_compatible_with_lambda(char_funct, m, n)
-    results = new_f(facets)
-    text(results, raw_results_PATH)
+
+# list_char_funct = sc.enumerate_char_funct_orbits(n, m)
+# print(len(list_char_funct))
+# for k in range(len(list_char_funct)):
+#     char_funct = list_char_funct[k]
+#     if k%10==0:
+#         print((k/len(list_char_funct))*10,'%')
+#     facets = sc.find_facets_compatible_with_lambda(char_funct, m, n)
+#     results = new_f(facets)
+    # text(results, raw_results_PATH)
+
+
+# for facets in sc.enumerate_non_isom_bin_matroids(n,m):
+#     results = new_f(facets)
+#     text(results, raw_results_PATH)
 
 # for n in range(2,8):
 #     m=n+4
@@ -250,15 +257,16 @@ for k in range(1):
 #     print((n,m), global_end - global_start)
 
 
-# for n in range(2, 12):
-#     m = n + 4
-#     MFset = []
-#     print(n, m)
-#     for MF in combinations(range(1, m + 1), n):
-#         MFset.append(sc.face_to_binary(MF, m))
-#     results = new_f(MFset)
-    # raw_results_PATH = 'raw_results/all_PLS_%d_%d' % (m, n)
-    # text(results, raw_results_PATH)
+for n in range(2, 6):
+    m = n + 4
+    number_steps = min(n,3)
+    MFset = []
+    print(n, m)
+    for MF in combinations(range(1, m + 1), n):
+        MFset.append(sc.face_to_binary(MF, m))
+    results = new_f(MFset)
+    raw_results_PATH = 'raw_results/all_weak_psdmfd_%d_%d' % (m, n)
+    text(results, raw_results_PATH)
 
 # print("Total time spent", global_end - global_start)
 

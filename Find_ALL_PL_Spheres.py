@@ -1,29 +1,23 @@
 import linear_alg_method as lam
 import timeit
 import numpy as np
-import numpy as cp
+import cupy as cp
 import SimplicialComplex as sc
 import numba as nb
 from itertools import combinations
 import sys
 
-
-pow_2 = np.ones(64,dtype=np.uint64)
-for k in range(62,-1,-1):
-    pow_2[k] = pow_2[k+1]*2
-# cfoo(pow_2)
 np.set_printoptions(threshold=sys.maxsize)
 
 G_vector = [2, 6, 10, 20, 30, 50, 70, 105, 140, 196, 252]
 
 np_arrange = np.arange(0, 256)
 np_arrange_odd = 2 * np.arange(0, 127) + 1
-m = 14
-n = 10
-p=m-n
-number_steps = 1
+m = 6
+n = 2
+number_steps = 2
 
-raw_results_PATH = 'raw_results/CSPLS_%d_%d' % (n,m)
+raw_results_PATH = 'raw_results/weak_psdmfd_%d_%d' % (m, n)
 
 
 def text(results, path):
@@ -125,11 +119,12 @@ def partition_generators(list_v_new, starting_row, list_not_together, list_disti
     return starting_row
 
 
-def new_f(facets,index_data):
+def new_f(facets):
+    start = timeit.default_timer()
     M = lam.construct_matrix(facets)
-    nbr_ridges, nbr_facets = M.shape
+    M_cp = cp.asarray(M)
     print(M.shape)
-    list_v = lam.find_kernel(M.copy())
+    list_v = lam.find_kernel(M)
     reduce_wrt_columns(list_v, np.array([0]), 0)
     nbr_results = list_v.shape[0]
 
@@ -155,15 +150,12 @@ def new_f(facets,index_data):
 
     for k in range(starting_row, nbr_results):
         list_gener_not_together.append([k])
-
     # here we will create the lists where we store how to build the linear sums
     list_to_pick_lin_comb = []
     array_number_lines = np.zeros(len(list_gener_not_together), dtype=np.uint64)
     number_cases = 1
-    list_groups = np.ones(len(list_gener_not_together)+1,dtype=np.uint16)
     for index in range(len(list_gener_not_together)):
         not_together = list_gener_not_together[index]
-        list_groups[index+1] = len(not_together)
         if len(not_together) == 1:
             nbr_lines = 2
         elif len(not_together) == 3:
@@ -181,88 +173,100 @@ def new_f(facets,index_data):
                 current_line += 1
         number_cases *= nbr_lines
     base_vect_to_mult_array = np.zeros((np.prod(array_number_lines[:number_steps]), nbr_results))
-    base_vect_to_mult_array[:, 0] = 1
-    print(np.format_float_scientific(np.prod(array_number_lines)*(n+4)*nbr_facets))
+    base_vect_to_mult_array[:, 0] = 1 # le premier générateur est toujours utilisé
+    print(nbr_results,array_number_lines, np.sum(array_number_lines == 11), np.format_float_scientific(number_cases))
+    # On crée le bloc de gauche des la matrice
     vect = np.zeros(number_steps, dtype=int)
-    #return 0
-    for k in range(1, np.prod(array_number_lines[:number_steps])):
+    for k in range(1, np.prod(array_number_lines[:number_steps])): # le premier c'est 0
         give_next_vect(vect, array_number_lines[:number_steps])
         for l in range(number_steps):
             base_vect_to_mult_array[k] += list_to_pick_lin_comb[l][vect[l], :]
     np_facets = cp.array(facets)
-    A = cp.asarray(np.transpose(list_v),dtype=np.uint)
+    A = cp.asarray(np.transpose(list_v))
 
-    A_to_C = np.dot(A,pow_2[:nbr_results])
-    t = open('CUDA_DATA/Data_'+str(n)+'_'+str(m)+'_'+str(index_data)+'.cpp', mode='a', encoding='utf-8')
-    t.write('#define N '+str(n))
-    t.write('\n')
-    t.write('#define NBR_FACETS '+str(nbr_facets))
-    t.write('\n')
-    t.write('#define NBR_RIDGES '+str(nbr_ridges))
-    t.write('\n')
-    t.write('#define NBR_GENERATORS '+str(nbr_results))
-    t.write('\n')
-    t.write('#define NBR_X0 '+str(np.prod(array_number_lines[2:8])))
-    t.write('\n')
-    t.write('#define NBR_X1 '+str(np.prod(array_number_lines[8:])))
-    t.write('\n')
-    # t.write('#define NBR_RIDGES '+str(((nbr_ridges//196)+1)*196))
-    # t.write('\n')
-    t.write('#define NBR_GROUPS '+ str(len(list_groups)))
-    t.write('\n')
-    t.write("#define MAX_NBR_FACETS "+str(G_vector[n-1]))
-    t.write('\n')
-    t.write("int sizeVectX0 = 8;")
-    t.write('\n')
-    t.write("int sizeVectX1 = "+str(max(0,len(list_groups)-9))+';')
-    t.write('\n')
-    t.write('unsigned long A[NBR_FACETS]={')
-    for k in range(nbr_facets):
-        if k<nbr_facets-1:
-            t.write(str(A_to_C[k])+',')
-        else:
-            t.write(str(A_to_C[k])+'};')
-    M_to_C = np.ones((n,nbr_facets),np.uint16)
-    t.write('\n')
-    for i in range(nbr_facets):
-        spot = 0
-        for j in range(nbr_ridges):
-            if M[j,i]==1:
-                M_to_C[spot,i] = j
-                spot+=1
-    t.write('unsigned int M[N][NBR_FACETS]={')
-    for i in range(n):
-        t.write('{')
-        for j in range(nbr_facets):
-            if j<nbr_facets:
-                t.write(str(M_to_C[i,j])+',')
-            else:
-                t.write(str(M_to_C[i,j]))
-        t.write('},')
-    t.write('};')
-    t.write('\n')
-    t.write('unsigned int F[NBR_FACETS]={')
-    for F in np_facets:
-        t.write(str(F)+',')
-    t.write('};')
-    t.write('\n')
-    t.write("unsigned int list_groups[NBR_GROUPS] = {")
-    for i in range(len(list_groups)):
-        if i<len(list_groups-1):
-            t.write(str(list_groups[i])+',')
-        else:
-            t.write(str(list_groups[i]))
-    t.write('};')
-    t.write('\n')
-    t.close()
-    print(list_groups,np.sum(list_groups))
+    results = []
+    vect = np.zeros(len(array_number_lines) - number_steps, dtype=int)
+    keep_going = True
+    # this is the main loop
+    while keep_going:
+        vect_to_mult_array = base_vect_to_mult_array.copy()
+        for l in range(number_steps, number_steps + vect.size):
+            vect_to_mult_array += list_to_pick_lin_comb[l][vect[l - number_steps]]
+        candidate_array, prod = get_product(M_cp, A, cp.asarray(vect_to_mult_array.T))
+        # verifying_G_theorem = cp.sum(candidate_array, axis=0) > -10
+        verifying_G_theorem = cp.sum(candidate_array, axis=0) <= G_vector[n - 1]
+        having_every_closed_ridges = cp.logical_not((prod >= 4).any(axis=0))
+        both_condition = cp.logical_and(verifying_G_theorem, having_every_closed_ridges)
+        good_conditions = cp.flatnonzero(both_condition)
+        good_candidates = candidate_array[:, good_conditions].T
+        for good_candidate in good_candidates:
+            good_candidate_facets = np_facets[good_candidate == 1]
+            good_candidate_facets_list = good_candidate_facets.tolist()
+            results.append(good_candidate_facets_list)
+            # K = sc.PureSimplicialComplex(good_candidate_facets_list)
+            # if K.Pic ==4 and K.is_a_seed() and K.is_closed() and K.is_promising() and K.is_Z2_homology_sphere():
+            #     print(good_candidate_facets)
+        keep_going = give_next_vect(vect, array_number_lines[number_steps:])
+    stop = timeit.default_timer()
+    print("Time spent: ", stop - start)
+    return results
 
-list_char_funct = sc.enumerate_char_funct_orbits(n, m)
-print(len(list_char_funct))
-for k in range(len(list_char_funct)):
-    char_funct = list_char_funct[k]
-    facets = sc.find_facets_compatible_with_lambda(char_funct, m, n)
-    new_f(facets,k)
 
+# if __name__ == '__main__':
+#     list_char_funct = sc.enumerate_char_funct_orbits(n, m)
+#     with Pool(processes=6) as pool:
+#         big_result = pool.imap(f, list_char_funct)
+#         for results in big_result:
+#             text(results,raw_results_PATH)
+# m=8
+# n=4
+# char_funct = [14,13,11,7,1,2,4,8]
+# facets = sc.find_facets_compatible_with_lambda(char_funct,m,n)
+# results = new_f(facets)
+# print(len(results))
+
+
+
+# list_char_funct = sc.enumerate_char_funct_orbits(n, m)
+# print(len(list_char_funct))
+# for k in range(len(list_char_funct)):
+#     char_funct = list_char_funct[k]
+#     if k%10==0:
+#         print((k/len(list_char_funct))*10,'%')
+#     facets = sc.find_facets_compatible_with_lambda(char_funct, m, n)
+#     results = new_f(facets)
+    # text(results, raw_results_PATH)
+
+
+# for facets in sc.enumerate_non_isom_bin_matroids(n,m):
+#     results = new_f(facets)
+#     text(results, raw_results_PATH)
+
+# for n in range(2,8):
+#     m=n+4
+#     list_char_funct = sc.enumerate_char_funct_orbits(n, m)
+#     global_start = timeit.default_timer()
+#     if n>4:
+#         number_steps = 3
+#     for char_funct in list_char_funct:
+#         facets = sc.find_facets_compatible_with_lambda(char_funct,m,n)
+#         results = new_f(facets)
+#         raw_results_PATH = 'raw_results/PLS_%d_%d' % (m, n)
+#         text(results,raw_results_PATH)
+#     global_end = timeit.default_timer()
+#     print((n,m), global_end - global_start)
+
+
+for n in range(2, 6):
+    m = n + 4
+    MFset = []
+    print(n, m)
+    for MF in combinations(range(1, m + 1), n):
+        MFset.append(sc.face_to_binary(MF, m))
+    results = new_f(MFset)
+    raw_results_PATH = 'raw_results/all_PLS_%d_%d' % (m, n)
+    text(results, raw_results_PATH)
+
+# print("Total time spent", global_end - global_start)
 
 print("Finished")
