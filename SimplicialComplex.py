@@ -321,7 +321,7 @@ class PureSimplicialComplex:
         if not self.H:
             self.create_FP()
             FP = [sorted([face for face in self.FP_bin[k]]) for k in range(self.n)]
-            if self.facets_bin==[]:
+            if len(self.facets_bin)==0:
                 return []
             boundary_matrices = [[] for k in range(self.n)]
             boundary_matrices[0] = [[] for k in range(self.m)]
