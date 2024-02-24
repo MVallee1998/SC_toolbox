@@ -157,23 +157,22 @@ class PureSimplicialComplex:
             self.NF_set_bin = all_non_faces.copy()
 
     def compute_MNF_set(self):
-        if not self.MNF_set_bin:
-            self.compute_NF_set()
-            self.MNF_set_bin = []
-            # Here we will try every face of dimension k
-            for k in range(1, self.n + 1):
-                # print([binary_to_face(non_face,self.m) for non_face in all_non_faces[k]])
-                for non_face_to_test in self.NF_set_bin[k]:
-                    is_MNF = True
-                    for element in list_2_pow[:self.m]:  # construct the (k-1)-subfaces
-                        if element | non_face_to_test == non_face_to_test:
-                            subface = element ^ non_face_to_test
-                            if subface not in self.FP_bin[k - 1]:
-                                is_MNF = False
-                                break
-                    if is_MNF and non_face_to_test not in self.MNF_set_bin:
-                        self.MNF_set_bin.append(non_face_to_test)
-            self.MNF_set_bin.sort()
+        self.compute_NF_set()
+        self.MNF_set_bin = []
+        # Here we will try every face of dimension k
+        for k in range(1, self.n + 1):
+            # print([binary_to_face(non_face,self.m) for non_face in all_non_faces[k]])
+            for non_face_to_test in self.NF_set_bin[k]:
+                is_MNF = True
+                for element in list_2_pow[:self.m]:  # construct the (k-1)-subfaces
+                    if element | non_face_to_test == non_face_to_test:
+                        subface = element ^ non_face_to_test
+                        if subface not in self.FP_bin[k - 1]:
+                            is_MNF = False
+                            break
+                if is_MNF and non_face_to_test not in self.MNF_set_bin:
+                    self.MNF_set_bin.append(non_face_to_test)
+        self.MNF_set_bin.sort()
 
     def MNF_bin_to_MNF(self):
         if not self.MNF_set:
@@ -322,7 +321,7 @@ class PureSimplicialComplex:
         if not self.H:
             self.create_FP()
             FP = [sorted([face for face in self.FP_bin[k]]) for k in range(self.n)]
-            if not self.facets_bin:
+            if self.facets_bin==[]:
                 return []
             boundary_matrices = [[] for k in range(self.n)]
             boundary_matrices[0] = [[] for k in range(self.m)]
@@ -520,8 +519,9 @@ def give_IDCM_up_to_isom(K_J, J):
 def are_isom(K1:PureSimplicialComplex, K2:PureSimplicialComplex):
     if K1.n != K2.n or K1.m != K2.m or len(K1.facets_bin) != len(K2.facets_bin):
         return False
-    if K1.facets_bin == K2.facets_bin:
-        return True
+    # if (K1.facets_bin == K2.facets_bin).all:
+    #     print('hello')
+    #     return True
     K1.create_f_vector()
     K2.create_f_vector()
     if K1.f_vector != K2.f_vector:

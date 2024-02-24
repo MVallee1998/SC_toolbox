@@ -18,8 +18,8 @@ G_vector = [2, 6, 10, 20, 30, 50, 70, 105, 140, 196, 252]
 
 np_arrange = np.arange(0, 256)
 np_arrange_odd = 2 * np.arange(0, 127) + 1
-m = 14
-n = 10
+m = 12
+n = 8
 p=m-n
 number_steps = 1
 
