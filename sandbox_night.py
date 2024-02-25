@@ -36,7 +36,7 @@ eq_classes = []
 #     eq_classes.append(sc.PureSimplicialComplex(facets_isom))
 start_sub = timeit.default_timer()
 start = start_sub
-for i in range(N):
+for i in tqdm.tqdm(range(N)):
     stop_sub = timeit.default_timer()
     K2 = sc.PureSimplicialComplex(results[i])
     K2.compute_MNF_set()
@@ -46,17 +46,13 @@ for i in range(N):
     # if not K2.is_a_seed():
     #     continue
     is_isom = False
-    print("Time spent for 1", stop_sub - start_sub, (i / N) * 100, "%", len(eq_classes))
+    # print("Time spent for 1", stop_sub - start_sub, (i / N) * 100, "%", len(eq_classes))
     start_sub = timeit.default_timer()
-    # for K1 in eq_classes:
-    #     K1.compute_MNF_set()
-    #     K1.MNF_bin_to_MNF()
-    #     if sc.are_isom(K1, K2):
-    #         is_isom = True
-    #         break
-    if K2.is_Z2_homology_sphere and sc.is_PLS_new(K2) and K2.m==10:
+    a,b,c = K2.is_Z2_homology_sphere(), K2.is_promising(), K2.is_closed()
+    if a and b and c and K2.m==10:
         eq_classes.append(K2)
     else:
+        print(a,b,c)
         del K2
 stop = timeit.default_timer()
 print(len(eq_classes), " isomorphic classes found", " Time spent:", stop - start)
