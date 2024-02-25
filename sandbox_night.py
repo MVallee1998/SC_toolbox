@@ -23,7 +23,6 @@ results = [json.loads(facets_bytes) for facets_bytes in read_file(raw_results_pa
 # print(results[0])
 # table = [0]*3
 isom = []
-
 N = len(results)
 
 # i0 = 0
@@ -49,13 +48,13 @@ for i in range(N):
     is_isom = False
     print("Time spent for 1", stop_sub - start_sub, (i / N) * 100, "%", len(eq_classes))
     start_sub = timeit.default_timer()
-    for K1 in eq_classes:
-        K1.compute_MNF_set()
-        K1.MNF_bin_to_MNF()
-        if sc.are_isom(K1, K2):
-            is_isom = True
-            break
-    if (not is_isom) and K2.is_Z2_homology_sphere() and K2.is_promising() and K2.is_closed() and K2.m==10:
+    # for K1 in eq_classes:
+    #     K1.compute_MNF_set()
+    #     K1.MNF_bin_to_MNF()
+    #     if sc.are_isom(K1, K2):
+    #         is_isom = True
+    #         break
+    if K2.is_Z2_homology_sphere and sc.is_PLS_new(K2) and K2.m==10:
         eq_classes.append(K2)
     else:
         del K2

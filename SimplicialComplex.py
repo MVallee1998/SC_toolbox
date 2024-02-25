@@ -188,6 +188,7 @@ class PureSimplicialComplex:
         for facet_iter in candidate_facets_iter:
             candidate_facets.append(sum([list_2_pow[k - 1] for k in facet_iter]))
         self.facets_bin = []
+        print(candidate_facets)
         for facet in candidate_facets:
             is_a_facet = True
             for MNF in self.MNF_set_bin:  # We check if it the facet does not contain some minimal non-face
@@ -197,6 +198,8 @@ class PureSimplicialComplex:
             if is_a_facet:
                 self.facets_bin.append(facet)
         self.facets_bin.sort()
+        print(self.facets_bin)
+        print('coucou')
         # if self.facets_bin[0] != list_2_pow[self.n]-1:
         #     list_others = []
         #     missed = 0
@@ -321,7 +324,7 @@ class PureSimplicialComplex:
         if not self.H:
             self.create_FP()
             FP = [sorted([face for face in self.FP_bin[k]]) for k in range(self.n)]
-            if self.facets_bin==[]:
+            if len(self.facets_bin)==0:
                 return []
             boundary_matrices = [[] for k in range(self.n)]
             boundary_matrices[0] = [[] for k in range(self.m)]
