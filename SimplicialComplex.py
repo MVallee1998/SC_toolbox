@@ -650,6 +650,7 @@ def is_PLS_new(K):
                 break
         if not is_PLS:
             break
+    del list_of_links
     # if is_PLS:
     #     K = list_of_links[0]
     #     K.compute_MNF_set()

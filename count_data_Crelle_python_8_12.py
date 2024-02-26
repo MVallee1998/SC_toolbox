@@ -47,7 +47,7 @@ text(seed_weak_psdmfd,Crelle_result_path)
 seed_PLS = []
 for facets in tqdm.tqdm(seed_weak_psdmfd):
     K =sc.PureSimplicialComplex(facets)
-    if K.is_Z2_homology_sphere() and K.is_closed() and K.is_promising():
+    if K.is_Z2_homology_sphere() and sc.is_PLS_new(K):
         seed_PLS.append(K.facets_bin.copy())
     del K
 print("third row: ",len(seed_PLS))

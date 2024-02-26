@@ -1,10 +1,10 @@
 import SimplicialComplex as sc
 import json
 import timeit
-m = 7
+m = 8
 n = 4
 p = m-n
-raw_results_path = 'raw_results/PLS_%d_%d' % (m, n)
+raw_results_path = 'raw_results/weak_psdmfd_%d_%d' % (m, n)
 final_results_path = 'final_results/PLS_%d_%d_new2' % (m, n)
 
 def read_file(filename):
@@ -37,7 +37,7 @@ for i in range(len(results)):
     K = sc.PureSimplicialComplex(facets)
     K.compute_MNF_set()
     K.MNF_bin_to_MNF()
-    print(K.MNF_set)
+    # print(K.MNF_set)
     if K.Pic == p and K.is_a_seed():
         list_of_seeds.append(K)
     else: del K
@@ -54,7 +54,7 @@ for i in range(N):
         stop_sub = timeit.default_timer()
         print("time spent for 100:", stop_sub - start_sub, " Percentage processed: ", i / N * 100, "%")
         start_sub = timeit.default_timer()
-    print(K.MNF_set_bin,K.is_promising(),K.is_Z2_homology_sphere(),K.is_closed())
+    # print(K.MNF_set_bin,K.is_promising(),K.is_Z2_homology_sphere(),K.is_closed())
     if K.is_promising() and K.is_Z2_homology_sphere() and K.is_closed():
         good_seeds.append(K)
 stop = timeit.default_timer()
@@ -90,7 +90,7 @@ data_to_text = []
 for K in eq_classes:
     data_to_text.append(K.facets_bin)
 
-text(data_to_text,final_results_path)
+# text(data_to_text,final_results_path)
 stop = timeit.default_timer()
 print("Final result saved.", " Time spent:", stop - start)
 
