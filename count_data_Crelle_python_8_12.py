@@ -22,7 +22,7 @@ number_of_m = [0]*(m+1)
 raw_results_path = 'raw_results/weak_psdmfd_%d_%d' % (m,n)
 results = [json.loads(facets_bytes) for facets_bytes in read_file(raw_results_path)]
 chosed_m=[]
-for facets in tqdm.tqdm(results):
+for facets in results:
     K =sc.PureSimplicialComplex(facets)
     number_of_m[K.m]+=1
     if K.m==m:
@@ -35,7 +35,7 @@ text(chosed_m,Crelle_result_path)
 # print(number_of_m)
 print("first row: ",len(chosed_m))
 seed_weak_psdmfd = []
-for facets in tqdm.tqdm(chosed_m):
+for facets in chosed_m:
     K =sc.PureSimplicialComplex(facets)
     if K.is_a_seed():
         seed_weak_psdmfd.append(K.facets_bin.copy())
@@ -45,7 +45,7 @@ del chosed_m
 Crelle_result_path = 'results_Crelle/seed_weak_psdmfd_%d_%d' % (m,n)
 text(seed_weak_psdmfd,Crelle_result_path)
 seed_PLS = []
-for facets in tqdm.tqdm(seed_weak_psdmfd):
+for facets in seed_weak_psdmfd:
     K =sc.PureSimplicialComplex(facets)
     if K.is_Z2_homology_sphere() and sc.is_PLS_new(K):
         seed_PLS.append(K.facets_bin.copy())
