@@ -5,6 +5,7 @@ import tqdm
 
 # raw_results_path = 'results_Hyuntae/PLS_10_6'
 raw_results_path = 'results_Hyuntae/PLS_10_6'
+writing_path = 'final_results/all_PLS_up_to_isom_10_6'
 def read_file(filename):
     with open(filename, 'rb') as f:
         data = f.readlines()
@@ -41,7 +42,7 @@ for i in tqdm.tqdm(range(N)):
     K2 = sc.PureSimplicialComplex(results[i])
     K2.compute_MNF_set()
     # print(K2.MNF_set_bin)
-    K2.MNF_bin_to_MNF()
+    # K2.MNF_bin_to_MNF()
     # print(K2.MNF_set)
     # if not K2.is_a_seed():
     #     continue
@@ -52,10 +53,11 @@ for i in tqdm.tqdm(range(N)):
     if a and b and c and K2.m==10:
         eq_classes.append(K2)
     else:
-        print(a,b,c)
         del K2
 stop = timeit.default_timer()
 print(len(eq_classes), " isomorphic classes found", " Time spent:", stop - start)
+facets_list = [K.facets_bin for K in eq_classes]
+text(facets_list, writing_path)
 # for facets in results:
 #     K = sc.PureSimplicialComplex(facets)
 
