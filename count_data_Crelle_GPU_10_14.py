@@ -40,25 +40,25 @@ Crelle_result_path = 'results_Crelle/chosed_m_%d_%d' % (m,n)
 text(chosed_m,Crelle_result_path)
 # print(number_of_m)
 print("first row: ",len(chosed_m))
-seed_weak_psdmfd = []
+# seed_weak_psdmfd = []
+# for facets in tqdm.tqdm(chosed_m):
+#     K =sc.PureSimplicialComplex(facets)
+#     if K.is_a_seed():
+#         seed_weak_psdmfd.append(K.facets_bin.copy())
+#     del K
+# print("second row: ",len(seed_weak_psdmfd))
+# del chosed_m
+# Crelle_result_path = 'results_Crelle/seed_weak_psdmfd_%d_%d' % (m,n)
+# text(seed_weak_psdmfd,Crelle_result_path)
+IDCM_PLS = []
 for facets in tqdm.tqdm(chosed_m):
     K =sc.PureSimplicialComplex(facets)
-    if K.is_a_seed():
-        seed_weak_psdmfd.append(K.facets_bin.copy())
-    del K
-print("second row: ",len(seed_weak_psdmfd))
-del chosed_m
-Crelle_result_path = 'results_Crelle/seed_weak_psdmfd_%d_%d' % (m,n)
-text(seed_weak_psdmfd,Crelle_result_path)
-seed_PLS = []
-for facets in tqdm.tqdm(seed_weak_psdmfd):
-    K =sc.PureSimplicialComplex(facets)
     if K.is_promising() and K.is_Z2_homology_sphere() and K.is_closed():
-        seed_PLS.append(K.facets_bin.copy())
+        IDCM_PLS.append(list(K.facets_bin.copy()))
     del K
-print("third row: ",len(seed_PLS))
-Crelle_result_path = 'results_Crelle/seed_PLS_%d_%d' % (m,n)
-text(seed_PLS,Crelle_result_path)
+print("third row: ",len(IDCM_PLS))
+Crelle_result_path = 'results_Crelle/IDCM_PLS_%d_%d' % (m,n)
+text(IDCM_PLS,Crelle_result_path)
 
 
 

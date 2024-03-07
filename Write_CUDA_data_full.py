@@ -18,8 +18,8 @@ G_vector = [2, 6, 10, 20, 30, 50, 70, 105, 140, 196, 252]
 
 np_arrange = np.arange(0, 256)
 np_arrange_odd = 2 * np.arange(0, 127) + 1
-m = 10
-n = 6
+m = 9
+n = 5
 p=m-n
 number_steps = 1
 
@@ -182,9 +182,10 @@ def new_f(facets,index_data):
         number_cases *= nbr_lines
     base_vect_to_mult_array = np.zeros((np.prod(array_number_lines[:number_steps]), nbr_results))
     base_vect_to_mult_array[:, 0] = 1
-    print(np.format_float_scientific(np.prod(array_number_lines)*(n+4)*nbr_facets))
+    print("dimension of the kernel of A:",nbr_results)
+    print("number of vectors to compute: ", np.count_nonzero(array_number_lines==11), " ", np.count_nonzero(array_number_lines==2))
     vect = np.zeros(number_steps, dtype=int)
-    #return 0
+    return 0
     for k in range(1, np.prod(array_number_lines[:number_steps])):
         give_next_vect(vect, array_number_lines[:number_steps])
         for l in range(number_steps):
