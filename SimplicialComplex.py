@@ -28,6 +28,9 @@ def face_to_binary(face, m):
 def binary_to_face(x, m):
     return [k + 1 for k in range(m) if (list_2_pow[k] | x) == x]
 
+def binary_to_face_0(x, m):
+    return [k for k in range(m) if (list_2_pow[k] | x) == x]
+
 
 class PureSimplicialComplex:
     def __init__(self, facets=None, MNF_set=None, n=0, FP_bin=None):
@@ -1037,7 +1040,7 @@ def enumerate_SL(n):
 
 
 def char_funct_bin_to_numpy(char_funct, n):
-    char_funct_array = np.zeros((n, len(char_funct)))
+    char_funct_array = np.zeros((n, len(char_funct)),dtype=np.int)
     for k in range(len(char_funct)):
         char_funct_array[:, k] = int_to_bin_array(char_funct[k], n)
     return(char_funct_array)
