@@ -1040,7 +1040,7 @@ def enumerate_SL(n):
 
 
 def char_funct_bin_to_numpy(char_funct, n):
-    char_funct_array = np.zeros((n, len(char_funct)),dtype=np.int)
+    char_funct_array = np.zeros((n, len(char_funct)))
     for k in range(len(char_funct)):
         char_funct_array[:, k] = int_to_bin_array(char_funct[k], n)
     return(char_funct_array)
