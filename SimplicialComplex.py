@@ -609,6 +609,92 @@ def are_isom(K1:PureSimplicialComplex, K2:PureSimplicialComplex):
             i += 1
     return False
 
+def find_isom(K1:PureSimplicialComplex, K2:PureSimplicialComplex):
+    if K1.n != K2.n or K1.m != K2.m or len(K1.facets_bin) != len(K2.facets_bin):
+        return False
+    # if (K1.facets_bin == K2.facets_bin).all:
+    #     print('hello')
+    #     return True
+    K1.create_f_vector()
+    K2.create_f_vector()
+    if K1.f_vector != K2.f_vector:
+        return False
+    K1.compute_MNF_set()
+    K2.compute_MNF_set()
+    K1.MNF_bin_to_MNF()
+    K2.MNF_bin_to_MNF()
+    sizes_MNF_K1 = [len(MNF) for MNF in K1.MNF_set]
+    sizes_MNF_K2 = [len(MNF) for MNF in K2.MNF_set]
+    sizes_MNF_K1.sort()
+    sizes_MNF_K2.sort()
+    if sizes_MNF_K1 != sizes_MNF_K2:
+        return False
+    list_seq_K1 = []
+    for vertex in range(1, K1.m + 1):
+        list_seq_K1.append(sorted([len(MNF) for MNF in K1.MNF_set if vertex in MNF]))
+    list_seq_K2 = []
+    for vertex in range(1, K2.m + 1):
+        list_seq_K2.append(sorted([len(MNF) for MNF in K2.MNF_set if vertex in MNF]))
+    if sorted(list_seq_K1) != sorted(list_seq_K2):
+        return False
+    types_dict_K1 = dict()
+    for index_vertex in range(K1.m):
+        vertex = index_vertex + 1
+        if json.dumps(list_seq_K1[index_vertex]) not in types_dict_K1:
+            types_dict_K1[json.dumps(list_seq_K1[index_vertex])] = [vertex]
+        else:
+            types_dict_K1[json.dumps(list_seq_K1[index_vertex])].append(vertex)
+    types_dict_K2 = dict()
+    for index_vertex in range(K2.m):
+        vertex = index_vertex + 1
+        if json.dumps(list_seq_K2[index_vertex]) not in types_dict_K2:
+            types_dict_K2[json.dumps(list_seq_K2[index_vertex])] = [vertex]
+        else:
+            types_dict_K2[json.dumps(list_seq_K2[index_vertex])].append(vertex)
+    list_bij_K1 = []
+    list_bij_K2 = []
+    for item in types_dict_K1.items():
+        seq, list_vertices = item
+        list_bij_K1.append(list_vertices)
+        list_bij_K2.append(types_dict_K2[seq])
+    permutations_relabelling = []
+    for k in range(len(list_bij_K2)):
+        permutations_relabelling.append([list(permutation_iter) for permutation_iter in permutations(list_bij_K2[k])])
+    K1_labels = []
+    for labels in list_bij_K1:
+        K1_labels += labels
+    i = 0
+    j = 0
+    current_relabelling = []
+    list_positions = [0] * len(permutations_relabelling)
+    while i >= 0:
+        if i == len(permutations_relabelling):
+            K2_labels = []
+            for labels in current_relabelling:
+                K2_labels += labels
+            help_bij = [(K1_labels[k], K2_labels[k]) for k in range(len(K1_labels))]
+            help_bij.sort()
+            old_labels = [data[1] - 1 for data in help_bij]
+            if (K1.MNF_set_bin == relabel_MNF(K2, old_labels)).all():
+                return old_labels
+            if i != 0:
+                current_relabelling.pop()
+            i -= 1
+            list_positions[i] += 1
+            continue
+        j = list_positions[i]
+        if j == len(permutations_relabelling[i]):
+            list_positions[i] = 0
+            if i != 0:
+                current_relabelling.pop()
+            i -= 1
+            list_positions[i] += 1
+            continue
+        else:
+            current_relabelling.append(permutations_relabelling[i][j])
+            list_positions[i] = j
+            i += 1
+    return False
 
 def read_file(filename):
     with open(filename, 'rb') as f:
