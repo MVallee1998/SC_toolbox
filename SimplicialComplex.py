@@ -37,6 +37,8 @@ class PureSimplicialComplex:
         self.m = 0
         self.n = n
         self.facets = facets
+        self.labels= None
+        self.filter_labels= None
         self.MNF_set = MNF_set
         self.NF_set_bin = None
         self.facets_bin = []
@@ -53,18 +55,24 @@ class PureSimplicialComplex:
             self.facets = facets
             if type(facets[0]) == list:
                 self.n = max([len(facet) for facet in self.facets])
-                labels = []
+                self.labels = []
                 for facet in facets:
                     for i in facet:
-                        if i not in labels:
-                            labels.append(i)
-                self.m = len(labels)
+                        if i not in self.labels:
+                            self.labels.append(i)
+                self.m = len(self.labels)
                 self.facets_bin = np.array([face_to_binary(facet, self.m) for facet in self.facets])
+                self.filter_labels = np.bitwise_or.reduce(np.array(self.facets_bin))
             else:
                 self.n = max([bin(MF).count("1") for MF in facets])
                 self.m = bin(np.bitwise_or.reduce(np.array(facets))).count("1")
                 np_facets = np.array(facets)
+                self.filter_labels = np.bitwise_or.reduce(np_facets)
+                self.labels = binary_to_face_0(self.filter_labels,len(bin(np.bitwise_or.reduce(np.array(facets)))))
                 or_facets = np.bitwise_or.reduce(np_facets)
+                for i in range(len(bin(np.bitwise_or.reduce(np.array(facets))))):
+                    if or_facets ^ list_2_pow[i] == or_facets:
+                        self.labels.append(i)
                 l = 0
                 while l != self.m:
                     l = 0
