@@ -3,18 +3,16 @@ from tqdm import tqdm
 from itertools import combinations, permutations
 
 import numpy as np
-from functools import reduce
 import numpy.polynomial as npp
 
 import Betti_numbers as bnbr
-import SimplicialComplex
 import Z2_linear_algebra as Z2la
 
 # sys.setrecursionlimit(1000)
 
 G_vector = [2, 6, 10, 20, 30, 50, 70, 105, 140, 196, 252]
 list_2_pow = [1]
-for k in range(30):
+for k in range(40):
     list_2_pow.append(list_2_pow[-1] * 2)
 
 
